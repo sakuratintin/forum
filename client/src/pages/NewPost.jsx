@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
 import { fileToDataUrl } from '../utils/image.js'
@@ -19,6 +19,7 @@ export default function NewPost() {
   const [done, setDone] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const user = getAuthUser()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (secs.length && !secs.some((s) => s.slug === section)) {
@@ -61,13 +62,8 @@ export default function NewPost() {
     try {
       const mediaUrls = []
       for (const f of media) mediaUrls.push(await fileToDataUrl(f))
-      await api.post('/posts', { title: title.trim(), section, content: content.trim(), media: mediaUrls })
-      setDone('✅ 发布成功')
-      setTitle('')
-      setContent('')
-      setMedia([])
-      setSection(secs[0]?.slug || '')
-      setTimeout(() => setDone(''), 2600)
+      const created = await api.post('/posts', { title: title.trim(), section, content: content.trim(), media: mediaUrls })
+      navigate(`/post/${created.id}`)
     } catch (ex) {
       fail(ex.message)
     } finally {
