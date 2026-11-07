@@ -1,7 +1,8 @@
 name: build-docker-image
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -26,4 +27,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
