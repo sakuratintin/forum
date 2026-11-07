@@ -1,8 +1,23 @@
+const fs = require('fs')
 const path = require('path')
 const { DatabaseSync } = require('node:sqlite')
 const bcrypt = require('bcryptjs')
 
-const db = new DatabaseSync(process.env.DB_PATH || path.join(__dirname, 'forum.db'))
+function resolveDbPath() {
+  const p = process.env.DB_PATH || path.join(__dirname, 'forum.db')
+  const dir = path.dirname(p)
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch (e) {
+    console.error('[db] 无法创建目录', dir, e.message, '→ 回退到', __dirname)
+    return path.join(__dirname, 'forum.db')
+  }
+  return p
+}
+
+const dbPath = resolveDbPath()
+console.log('[db] 数据库路径:', dbPath)
+const db = new DatabaseSync(dbPath)
 
 const SECTIONS = [
   { slug: 'acg', name: '二次元', icon: '漫', description: '动漫、漫画、游戏等 ACG 内容讨论。' },
