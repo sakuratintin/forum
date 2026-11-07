@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+server/forum.db
+server/forum.db-wal
+server/forum.db-shm
+**/*.log
+.git
+.gitignore
+.design

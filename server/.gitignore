@@ -1,0 +1,5 @@
+node_modules
+forum.db
+forum.db-wal
+forum.db-shm
+*.log
