@@ -10,6 +10,8 @@ export default function PostDetail() {
   const [replyText, setReplyText] = useState('')
   const [replyErr, setReplyErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [translation, setTranslation] = useState('')
+  const [translating, setTranslating] = useState(false)
   const replyRef = useRef(null)
   const user = getAuthUser()
 
@@ -46,6 +48,22 @@ export default function PostDetail() {
       setReplyErr(ex.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleTranslate() {
+    if (translating || !post.content) return
+    setTranslating(true)
+    setReplyErr('')
+    try {
+      const data = await api.post('/ai/chat', {
+        messages: [{ role: 'user', content: `请把下面这段帖子内容翻译成中文（如果原文是中文则翻译成英文），直接输出译文，不要任何解释：\n\n${post.content}` }],
+      })
+      setTranslation((data.content || '').trim())
+    } catch (ex) {
+      setReplyErr(ex.message)
+    } finally {
+      setTranslating(false)
     }
   }
 
@@ -86,6 +104,12 @@ export default function PostDetail() {
                 {post.media.map((m, i) => <img key={i} src={m} alt={`图片${i + 1}`} loading="lazy" />)}
               </div>
             )}
+            {translation && (
+              <div className="detail-translate">
+                <div className="detail-translate-title">🌐 AI 翻译</div>
+                <p>{translation}</p>
+              </div>
+            )}
           </div>
 
           <footer className="detail-actions">
@@ -94,6 +118,9 @@ export default function PostDetail() {
               <span>{post.like_count}</span>
             </button>
             <button type="button" className="action-btn" onClick={() => replyRef.current?.focus()}>💬 {post.reply_count}</button>
+            <button type="button" className="action-btn" onClick={handleTranslate} disabled={translating}>
+              {translating ? '翻译中…' : '🌐 翻译'}
+            </button>
           </footer>
         </article>
 

@@ -18,6 +18,7 @@ export default function NewPost() {
   const [shakeKey, setShakeKey] = useState(0)
   const [done, setDone] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [aiBusy, setAiBusy] = useState('')
   const user = getAuthUser()
   const navigate = useNavigate()
 
@@ -51,6 +52,49 @@ export default function NewPost() {
   function fail(msg) {
     setError(msg)
     setShakeKey((k) => k + 1)
+  }
+
+  async function aiCall(prompt) {
+    const data = await api.post('/ai/chat', { messages: [{ role: 'user', content: prompt }] })
+    return (data.content || '').trim()
+  }
+
+  async function aiPolish() {
+    if (!content.trim()) return fail('请先写正文，再用 AI 润色')
+    setAiBusy('polish')
+    try {
+      setContent(await aiCall(`请润色下面这段论坛帖子正文，保持原意，让表达更通顺自然。直接输出润色后的正文，不要任何解释：\n\n${content}`))
+    } catch (ex) {
+      fail(ex.message)
+    } finally {
+      setAiBusy('')
+    }
+  }
+
+  async function aiContinue() {
+    if (!content.trim()) return fail('请先写正文，再用 AI 续写')
+    setAiBusy('continue')
+    try {
+      const extra = await aiCall(`请接着下面这段论坛帖子正文自然地续写一段（约 100 字），风格保持一致，直接输出续写内容，不要重复原文：\n\n${content}`)
+      setContent(content + '\n\n' + extra)
+    } catch (ex) {
+      fail(ex.message)
+    } finally {
+      setAiBusy('')
+    }
+  }
+
+  async function aiTitle() {
+    if (!content.trim()) return fail('请先写正文，再生成标题')
+    setAiBusy('title')
+    try {
+      const t = await aiCall(`请根据下面这段论坛帖子正文，生成一个简洁吸引人的标题（不超过 20 字），直接输出标题，不要引号、不要解释：\n\n${content}`)
+      setTitle(t.slice(0, 80))
+    } catch (ex) {
+      fail(ex.message)
+    } finally {
+      setAiBusy('')
+    }
   }
 
   async function handleSubmit(e) {
@@ -100,6 +144,18 @@ export default function NewPost() {
             </span>
             <textarea className="input textarea" rows={8} placeholder="在这里输入正文内容…" value={content} onChange={(e) => setContent(e.target.value)} />
           </label>
+
+          <div className="ai-tools">
+            <button type="button" className="ai-tool-btn" onClick={aiPolish} disabled={!!aiBusy}>
+              {aiBusy === 'polish' ? '润色中…' : '✨ AI 润色'}
+            </button>
+            <button type="button" className="ai-tool-btn" onClick={aiContinue} disabled={!!aiBusy}>
+              {aiBusy === 'continue' ? '续写中…' : '➕ AI 续写'}
+            </button>
+            <button type="button" className="ai-tool-btn" onClick={aiTitle} disabled={!!aiBusy}>
+              {aiBusy === 'title' ? '生成中…' : '🏷 生成标题'}
+            </button>
+          </div>
 
           <MediaUploader files={media} onChange={setMedia} />
 

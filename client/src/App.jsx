@@ -13,6 +13,7 @@ import Login from './pages/Login.jsx'
 import Profile from './pages/Profile.jsx'
 import Messages from './pages/Messages.jsx'
 import Admin from './pages/Admin.jsx'
+import AiChat from './components/AiChat.jsx'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -47,6 +48,7 @@ export default function App() {
         </main>
         <Footer />
       </div>
+      <AiChat />
     </>
   )
 }

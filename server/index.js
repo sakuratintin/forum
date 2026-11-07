@@ -11,6 +11,7 @@ const app = express()
 app.use(express.json({ limit: '20mb' }))
 
 const SECRET = 'hct-forum-secret'
+const AI_KEY = process.env.AI_API_KEY || ''
 
 function signToken(user) {
   return jwt.sign({ id: user.id, username: user.username, role: user.role }, SECRET, { expiresIn: '7d' })
@@ -353,6 +354,29 @@ app.post('/api/admin/users/:username/unmute', auth, adminOnly, (req, res) => {
 
 app.get('/api/admin/users', auth, adminOnly, (req, res) => {
   res.json(db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC').all())
+})
+
+// ===== AI 助手（智谱 GLM） =====
+app.post('/api/ai/chat', async (req, res) => {
+  const { messages, system } = req.body || {}
+  if (!AI_KEY) return res.status(503).json({ error: 'AI 未配置，请设置环境变量 AI_API_KEY' })
+  if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ error: '消息不能为空' })
+  const payload = {
+    model: 'glm-4-flash',
+    messages: system ? [{ role: 'system', content: system }, ...messages] : messages,
+  }
+  try {
+    const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_KEY },
+      body: JSON.stringify(payload),
+    })
+    const data = await resp.json()
+    if (!resp.ok) return res.status(resp.status).json({ error: data?.error?.message || 'AI 调用失败' })
+    res.json({ content: data?.choices?.[0]?.message?.content || '' })
+  } catch (e) {
+    res.status(500).json({ error: 'AI 请求失败：' + e.message })
+  }
 })
 
 // 生产环境：托管前端构建产物（若存在）
