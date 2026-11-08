@@ -239,7 +239,7 @@ ul { list-style: none; }
 .nav-dropdown-item:hover { background: rgba(34, 211, 238, 0.1); color: var(--cyan-bright); }
 
 /* ===== Hero ===== */
-.hero { position: relative; overflow: hidden; padding: 96px 0 72px; }
+.hero { position: relative; overflow: hidden; padding: 72px 0 56px; }
 .hero::before {
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(680px 360px at 50% 0%, rgba(34, 211, 238, 0.16), transparent 70%);
@@ -1291,7 +1291,18 @@ body::before {
 }
 .board-switch:hover { color: var(--cyan-bright); border-color: var(--line-strong); }
 .board-switch.active { color: #041018; background: linear-gradient(135deg, var(--cyan-bright), var(--cyan)); border-color: transparent; }
-.section-card-all { border-color: rgba(34, 211, 238, 0.45); background: linear-gradient(160deg, rgba(34, 211, 238, 0.1), rgba(10, 15, 26, 0.5)); }
+.section-card-all {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 20px;
+  padding: 22px 28px;
+  border-color: rgba(34, 211, 238, 0.45);
+  background: linear-gradient(160deg, rgba(34, 211, 238, 0.1), rgba(10, 15, 26, 0.5));
+}
+.section-card-all .section-card-desc { flex: 1; margin-top: 0; min-height: 0; }
+.section-card-all .section-card-foot { margin-top: 0; padding-top: 0; border-top: none; gap: 18px; flex: none; }
+@media (max-width: 640px) {
+  .section-card-all { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
 .action-pin { color: var(--cyan-bright) !important; border-color: var(--line-strong) !important; }
 .action-pin:hover { background: rgba(34, 211, 238, 0.1); }
 .action-btn.bookmarked { color: #fbbf24 !important; border-color: rgba(251, 191, 36, 0.5) !important; background: rgba(251, 191, 36, 0.08); }
@@ -1514,6 +1525,29 @@ body::before {
 .notify-post { color: var(--text-muted); font-size: 0.84rem; margin-top: 4px; }
 .notify-snippet { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notify-time { color: var(--text-muted); font-size: 0.72rem; margin-top: 6px; }
+
+/* ===== 铃铛下拉预览 ===== */
+.nav-notif { position: relative; }
+.nav-notif-panel {
+  position: absolute; right: 0; top: calc(100% + 10px); width: 320px;
+  background: rgba(10, 15, 26, 0.98); border: 1px solid var(--line-strong);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), var(--glow);
+  padding: 8px; z-index: 600; animation: modal-in 0.2s ease both;
+}
+.nav-notif-head { padding: 8px 10px; color: var(--cyan-bright); font-size: 0.85rem; font-family: var(--font-display); }
+.nav-notif-empty { padding: 16px 10px; color: var(--text-muted); font-size: 0.85rem; text-align: center; }
+.nav-notif-item { display: flex; gap: 10px; padding: 9px 10px; border-radius: 8px; transition: background 0.2s ease; }
+.nav-notif-item:hover { background: rgba(34, 211, 238, 0.08); }
+.nav-notif-item .avatar { width: 32px; height: 32px; flex: none; }
+.nav-notif-main { min-width: 0; flex: 1; }
+.nav-notif-title { font-size: 0.84rem; color: var(--text); display: flex; gap: 6px; flex-wrap: wrap; }
+.nav-notif-title b { color: var(--cyan-bright); font-weight: 500; }
+.nav-notif-snippet { font-size: 0.76rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.nav-notif-more { display: block; text-align: center; padding: 9px; margin-top: 4px; border-top: 1px solid var(--line); color: var(--cyan-bright); font-size: 0.82rem; }
+.nav-notif-more:hover { text-shadow: 0 0 10px var(--cyan); }
+@media (max-width: 640px) {
+  .nav-notif-panel { position: fixed; left: 12px; right: 12px; top: 70px; width: auto; }
+}
 
 /* ===== 移动端性能与输入优化（解决输入法卡顿/缩放） ===== */
 @media (max-width: 768px) {
