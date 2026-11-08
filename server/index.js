@@ -505,6 +505,77 @@ app.post('/api/ai/transcribe', auth, asrUpload.single('file'), async (req, res) 
   }
 })
 
+// ===== 热点资讯（AI 搜索 + 摘要） =====
+const HOT_CATEGORIES = {
+  news: { label: '新闻', query: '今日热点新闻', engine: 'search_pro', recency: 'oneDay' },
+  sports: { label: '赛事', query: '体育赛事 最新战况', engine: 'search_pro', recency: 'oneDay' },
+  anime: { label: '动漫', query: '动漫资讯 新番', engine: 'search_pro', recency: 'oneWeek' },
+}
+
+async function webSearch(query, engine, recency) {
+  if (!AI_KEY) throw new Error('AI 未配置')
+  const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/web_search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_KEY },
+    body: JSON.stringify({ search_query: query, search_engine: engine, search_intent: false, count: 8, search_recency_filter: recency, content_size: 'medium' }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error((data && data.error && data.error.message) || '搜索失败')
+  return data.search_result || []
+}
+
+app.post('/api/hot/fetch', auth, async (req, res) => {
+  const me = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id)
+  if (!me || me.role !== 'admin') return res.status(403).json({ error: '只有管理员可以抓取热点' })
+  const counts = {}
+  const errors = []
+  for (const [cat, cfg] of Object.entries(HOT_CATEGORIES)) {
+    try {
+      const results = await webSearch(cfg.query, cfg.engine, cfg.recency)
+      const ins = db.prepare('INSERT INTO hot_topics (category, title, summary, source, link, published_at) VALUES (?,?,?,?,?,?)')
+      const exists = db.prepare('SELECT id FROM hot_topics WHERE link = ?')
+      let added = 0
+      for (const r of results) {
+        if (!r.title) continue
+        const link = r.link || ''
+        if (link && exists.get(link)) continue
+        ins.run(cat, String(r.title).slice(0, 200), r.content || '', r.media || '', link, r.publish_date || '')
+        added++
+      }
+      db.prepare('DELETE FROM hot_topics WHERE category = ? AND id NOT IN (SELECT id FROM hot_topics WHERE category = ? ORDER BY id DESC LIMIT 50)').run(cat, cat)
+      counts[cat] = added
+      try {
+        const text = results.slice(0, 8).map((r, i) => `${i + 1}. ${r.title}：${(r.content || '').slice(0, 80)}`).join('\n')
+        const summary = await callAI([
+          { role: 'system', content: '你是资讯编辑。根据下面的资讯标题和摘要，用 120~160 字写一段「今日速览」，概括主要看点。只依据给定内容，不要编造，直接输出一段话。' },
+          { role: 'user', content: text },
+        ])
+        if (summary) {
+          db.prepare("INSERT OR REPLACE INTO hot_summaries (category, content, fetched_at) VALUES (?,?,datetime('now','localtime'))").run(cat, summary.trim())
+        }
+      } catch {
+        /* 摘要失败不影响主流程 */
+      }
+    } catch (e) {
+      counts[cat] = 0
+      errors.push(cfg.label + '：' + e.message)
+    }
+  }
+  res.json({ ok: true, counts, errors })
+})
+
+app.get('/api/hot', (req, res) => {
+  const summaries = {}
+  for (const s of db.prepare('SELECT * FROM hot_summaries').all()) {
+    summaries[s.category] = { content: s.content, fetched_at: s.fetched_at }
+  }
+  const category = req.query.category
+  const items = category
+    ? db.prepare('SELECT * FROM hot_topics WHERE category = ? ORDER BY id DESC LIMIT 60').all(category)
+    : db.prepare('SELECT * FROM hot_topics ORDER BY id DESC LIMIT 120').all()
+  res.json({ summaries, items })
+})
+
 // ===== 文件上传（图片 / 视频 / 头像） =====
 const upload = multer({
   storage: multer.diskStorage({

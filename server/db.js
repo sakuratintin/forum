@@ -97,6 +97,21 @@ function initDb() {
       key TEXT PRIMARY KEY,
       value TEXT DEFAULT ''
     );
+    CREATE TABLE IF NOT EXISTS hot_topics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      title TEXT NOT NULL,
+      summary TEXT DEFAULT '',
+      source TEXT DEFAULT '',
+      link TEXT DEFAULT '',
+      published_at TEXT DEFAULT '',
+      fetched_at TEXT DEFAULT (datetime('now','localtime'))
+    );
+    CREATE TABLE IF NOT EXISTS hot_summaries (
+      category TEXT PRIMARY KEY,
+      content TEXT DEFAULT '',
+      fetched_at TEXT DEFAULT (datetime('now','localtime'))
+    );
   `)
 
   seed()
