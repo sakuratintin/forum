@@ -6,7 +6,7 @@ import Hero from '../components/Hero.jsx'
 import ForumSections from '../components/ForumSections.jsx'
 import PostRow from '../components/PostRow.jsx'
 
-const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫' }
+const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫', game: '游戏' }
 
 export default function Home() {
   const { data: sections, loading } = useApi('/sections')

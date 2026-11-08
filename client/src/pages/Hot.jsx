@@ -7,8 +7,9 @@ const TABS = [
   { key: 'news', label: '新闻' },
   { key: 'sports', label: '赛事' },
   { key: 'anime', label: '动漫' },
+  { key: 'game', label: '游戏' },
 ]
-const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫' }
+const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫', game: '游戏' }
 
 function HotCard({ h }) {
   return (

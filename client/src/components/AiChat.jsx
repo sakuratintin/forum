@@ -1,10 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { api, transcribeFile } from '../utils/api.js'
 
-const SYSTEM = '你是 H.C.T. Forum 论坛的 AI 助手，请用简洁、友好的中文回答用户的问题。'
+const SYSTEM = `你是 H.C.T. Forum 论坛的 AI 助手。请只依据下面列出的功能回答，绝对不要编造网站上不存在的功能（例如没有「预览」「标签」「草稿」「编辑器」等）。
+
+网站功能：
+- 板块（共 6 个）：二次元、学习交流、学习生活、社团活动、二手集市、游戏讨论
+- 发帖：点导航栏「发帖」→ 填标题 → 选板块 → 写正文（可选上传图片/视频）→ 点「发布」。板块页右上角也有「＋ 发帖」。
+- 关注：打开他人主页点「＋ 关注」；互相关注后按钮显示「互相关注 ✓」
+- 私信：导航栏「私信」，仅互相关注的好友可发
+- 搜索：导航栏「搜索」，可搜帖子标题/内容；切到「用户」标签可按用户名或 UID 搜索
+- 热点资讯：导航栏「热点」，含 新闻/赛事/动漫/游戏 分类，由 AI 联网整理
+- 帖子内 @EVA：在帖子回复框输入 @EVA + 问题，AI 会阅读该帖和评论后作答
+- UID：每个用户有唯一数字 UID，显示在个人主页
+
+回答要求：简洁（200 字以内）；问「怎么用」时用 1. 2. 3. 列出步骤；不确定就直接说不知道，不要编造。`
+
 const STORAGE_KEY = 'forum_ai_chat'
 
-const SUGGESTIONS = ['这个论坛怎么发帖？', '怎么关注其他用户？', '推荐几个热门板块']
+const SUGGESTIONS = ['怎么发帖？', '怎么关注和私信别人？', '怎么查看热点资讯？', '论坛有哪些板块？']
 
 function SparkIcon({ size = 24 }) {
   return (
@@ -78,6 +92,7 @@ async function toWav(blob) {
 }
 
 export default function AiChat() {
+  const location = useLocation()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState(() => {
     try {
@@ -124,7 +139,10 @@ export default function AiChat() {
     setError('')
     setLoading(true)
     try {
-      const data = await api.post('/ai/chat', { messages: next, system: SYSTEM })
+      const data = await api.post('/ai/chat', {
+        messages: next,
+        system: `${SYSTEM}\n\n（用户当前所在页面：${location.pathname}）`,
+      })
       setMessages([...next, { role: 'assistant', content: data.content }])
     } catch (ex) {
       setError(ex.message)

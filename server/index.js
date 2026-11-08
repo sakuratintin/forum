@@ -510,6 +510,7 @@ const HOT_CATEGORIES = {
   news: { label: '新闻', query: '今日热点新闻', engine: 'search_pro', recency: 'oneDay' },
   sports: { label: '赛事', query: '体育赛事 最新战况', engine: 'search_pro', recency: 'oneDay' },
   anime: { label: '动漫', query: '动漫资讯 新番', engine: 'search_pro', recency: 'oneWeek' },
+  game: { label: '游戏', query: '游戏新闻 新游发售', engine: 'search_pro', recency: 'oneWeek' },
 }
 
 async function webSearch(query, engine, recency) {

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api } from '../utils/api.js'
 
-const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫' }
+const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫', game: '游戏' }
 
 export default function HotDetail() {
   const { id } = useParams()
