@@ -18,6 +18,24 @@ function resolveDbPath() {
 const dbPath = resolveDbPath()
 console.log('[db] 数据库路径:', dbPath)
 
+// 检测数据目录是否真的挂载了持久卷（Linux 上不同挂载点设备号不同）
+function isPersistentDir(filePath) {
+  try {
+    const dir = path.dirname(filePath)
+    const a = fs.statSync(dir)
+    const b = fs.statSync('/')
+    return a.dev !== b.dev
+  } catch {
+    return false
+  }
+}
+const isPersisted = isPersistentDir(dbPath)
+if (isPersisted) {
+  console.log('[db] 数据目录已挂载持久卷 ✓（重新部署数据不会丢）')
+} else {
+  console.error('[db] ⚠️ 警告：数据目录未检测到持久卷挂载，重新部署后数据会丢失！请在环界云把存储卷挂载到 /data')
+}
+
 // 如果管理员上传了待恢复的备份，启动时先替换数据库（替换前自动备份当前库）
 ;(function applyPendingRestore() {
   try {
@@ -245,4 +263,4 @@ function cleanDemoData() {
   }
 }
 
-module.exports = { db, initDb, dbPath }
+module.exports = { db, initDb, dbPath, isPersisted }

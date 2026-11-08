@@ -321,6 +321,12 @@ function AdminPanel() {
                 <b>{fmtSize(dataInfo?.dbSize)}</b>
               </div>
               <div className="data-item">
+                <span>持久卷状态</span>
+                <b style={{ color: dataInfo?.mounted ? '#4ade80' : '#fda4af' }}>
+                  {dataInfo?.mounted ? '✓ 已挂载（数据安全）' : '⚠️ 未挂载（数据会丢）'}
+                </b>
+              </div>
+              <div className="data-item">
                 <span>用户 / 帖子 / 回复</span>
                 <b>{dataInfo ? `${dataInfo.counts.users} / ${dataInfo.counts.posts} / ${dataInfo.counts.replies}` : '—'}</b>
               </div>

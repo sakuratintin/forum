@@ -4,7 +4,7 @@ const express = require('express')
 const multer = require('multer')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { db, initDb, dbPath } = require('./db')
+const { db, initDb, dbPath, isPersisted } = require('./db')
 
 initDb()
 
@@ -600,6 +600,7 @@ app.get('/api/admin/data-info', auth, adminOnly, (req, res) => {
     dbSize: size,
     backupDir: dir,
     backups,
+    mounted: isPersisted,
     counts: {
       users: db.prepare('SELECT COUNT(*) c FROM users').get().c,
       posts: db.prepare('SELECT COUNT(*) c FROM posts').get().c,
