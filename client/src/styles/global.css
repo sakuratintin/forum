@@ -1454,6 +1454,19 @@ body::before {
 .data-item b { color: var(--text); font-size: 0.9rem; word-break: break-all; }
 @media (max-width: 640px) { .data-grid { grid-template-columns: 1fr; } }
 
+/* ===== 帖子详情：UID / 登录引导 / 首页更多 ===== */
+.detail-uid {
+  font-size: 0.72rem; color: var(--text-muted);
+  padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line);
+}
+.reply-login {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 28px 20px; border-radius: 12px; border: 1px dashed var(--line-strong);
+  background: rgba(22, 34, 58, 0.3);
+}
+.reply-login p { color: var(--text-muted); font-size: 0.9rem; }
+.home-recent-more { display: flex; justify-content: center; margin-top: 22px; }
+
 /* ===== 移动端性能与输入优化（解决输入法卡顿/缩放） ===== */
 @media (max-width: 768px) {
   /* 关闭昂贵的毛玻璃效果，避免输入法弹起、滚动时掉帧 */

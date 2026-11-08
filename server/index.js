@@ -81,7 +81,8 @@ function listWithFollow(req, rows) {
 }
 
 function serializePost(p, userId) {
-  const author = db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(p.author_id)
+  const author = db.prepare('SELECT id, username, avatar, uid FROM users WHERE id = ?').get(p.author_id)
+  const authorFollowing = userId && author ? !!db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').get(userId, author.id) : false
   const section = db.prepare('SELECT slug, name FROM sections WHERE id = ?').get(p.section_id)
   const likeCount = db.prepare('SELECT COUNT(*) c FROM likes WHERE post_id = ?').get(p.id).c
   const replyCount = db.prepare('SELECT COUNT(*) c FROM replies WHERE post_id = ?').get(p.id).c
@@ -98,7 +99,7 @@ function serializePost(p, userId) {
     hot: !!p.hot,
     created_at: p.created_at,
     last_reply_at: lastReply ? lastReply.t : null,
-    author,
+    author: author ? { ...author, is_following: authorFollowing } : null,
     section: section ? section.name : '',
     section_slug: section ? section.slug : '',
     like_count: likeCount,

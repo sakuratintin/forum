@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
+import FollowButton from '../components/FollowButton.jsx'
 import SkeletonRows from '../components/Skeleton.jsx'
 import { toastOk, toastErr } from '../utils/toast.js'
 
@@ -131,6 +132,8 @@ export default function PostDetail() {
                 {post.author?.avatar ? <img src={post.author.avatar} alt="" className="avatar-img" /> : post.author?.username?.[0]}
               </span>
               <Link to={`/user/${encodeURIComponent(post.author?.username)}`} className="detail-author author-link">{post.author?.username}</Link>
+              {post.author?.uid && <span className="detail-uid">UID {post.author.uid}</span>}
+              <FollowButton username={post.author?.username} initialFollowing={post.author?.is_following} />
               <span>·</span>
               <span>{post.created_at}</span>
               <span>·</span>
@@ -198,7 +201,13 @@ export default function PostDetail() {
             ))}
           </div>
 
-          <form className="reply-form" onSubmit={handleReply}>
+          {!user ? (
+            <div className="reply-login">
+              <p>登录后即可参与讨论、回复本帖</p>
+              <Link to="/login" className="btn btn-primary">去登录</Link>
+            </div>
+          ) : (
+            <form className="reply-form" onSubmit={handleReply}>
             {mutedMe && <p className="form-error">你已被禁言，暂时无法回复。</p>}
             {replyErr && <p className="form-error">{replyErr}</p>}
             <textarea
@@ -223,7 +232,8 @@ export default function PostDetail() {
                 {submitting ? (/@EVA/i.test(replyText) ? 'AI 思考中…' : '发送中…') : '回复'}
               </button>
             </div>
-          </form>
+            </form>
+          )}
         </section>
       </div>
 

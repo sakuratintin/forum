@@ -92,6 +92,9 @@ export default function Home() {
                 ))}
               </div>
             )}
+            <div className="home-recent-more">
+              <Link to="/section/all" className="btn btn-ghost">查看全部帖子 →</Link>
+            </div>
           </section>
         </div>
 
