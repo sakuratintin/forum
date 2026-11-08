@@ -14,6 +14,7 @@ import Profile from './pages/Profile.jsx'
 import Messages from './pages/Messages.jsx'
 import Admin from './pages/Admin.jsx'
 import AiChat from './components/AiChat.jsx'
+import Search from './pages/Search.jsx'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -28,6 +29,7 @@ function AnimatedRoutes() {
         <Route path="/messages/:username" element={<Messages />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/new" element={<NewPost />} />
+        <Route path="/search" element={<Search />} />
         <Route path="/login" element={<Login />} />
       </Routes>
     </div>

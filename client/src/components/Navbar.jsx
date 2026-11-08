@@ -68,6 +68,7 @@ export default function Navbar() {
 
           <NavLink to="/new" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>发帖</NavLink>
           <NavLink to="/messages" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>私信</NavLink>
+          <NavLink to="/search" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>搜索</NavLink>
           {user?.role === 'admin' && (
             <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>管理</NavLink>
           )}

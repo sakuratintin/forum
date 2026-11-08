@@ -1126,6 +1126,13 @@ body::before {
   50% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
 }
 
+/* ===== 搜索框 ===== */
+.search-bar {
+  display: flex; gap: 10px; max-width: 640px; margin: 0 auto 20px;
+}
+.search-bar .input { flex: 1; }
+.search-count { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 18px; }
+
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }

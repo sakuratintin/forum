@@ -122,16 +122,21 @@ app.get('/api/sections', (req, res) => {
 
 // ===== 帖子 =====
 app.get('/api/posts', optionalAuth, (req, res) => {
-  const { section, sort = 'latest', page = 1, pageSize = 5 } = req.query
+  const { section, sort = 'latest', page = 1, pageSize = 5, q } = req.query
   const pageN = Math.max(1, parseInt(page) || 1)
   const size = Math.max(1, Math.min(50, parseInt(pageSize) || 5))
 
-  let where = ''
+  const conds = []
   const params = []
   if (section) {
-    where = 'WHERE s.slug = ?'
+    conds.push('s.slug = ?')
     params.push(section)
   }
+  if (q && q.trim()) {
+    conds.push('(p.title LIKE ? OR p.content LIKE ?)')
+    params.push(`%${q.trim()}%`, `%${q.trim()}%`)
+  }
+  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : ''
   let order = 'ORDER BY p.pinned DESC, p.id DESC'
   if (sort === 'hot') {
     order = 'ORDER BY p.pinned DESC, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) DESC, p.id DESC'
