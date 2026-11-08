@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
-import { api, getAuthUser } from '../utils/api.js'
-import { fileToDataUrl } from '../utils/image.js'
+import { api, getAuthUser, uploadFile } from '../utils/api.js'
 import MediaUploader from '../components/MediaUploader.jsx'
 import SectionPicker from '../components/SectionPicker.jsx'
 
@@ -105,7 +104,7 @@ export default function NewPost() {
     setSubmitting(true)
     try {
       const mediaUrls = []
-      for (const f of media) mediaUrls.push(await fileToDataUrl(f))
+      for (const f of media) mediaUrls.push(await uploadFile(f))
       const created = await api.post('/posts', { title: title.trim(), section, content: content.trim(), media: mediaUrls })
       navigate(`/post/${created.id}`)
     } catch (ex) {

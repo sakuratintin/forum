@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react'
-import { api, getAuthUser, setAuthUser, notifyAuthChanged } from '../utils/api.js'
+import { api, getAuthUser, setAuthUser, notifyAuthChanged, uploadFile } from '../utils/api.js'
 import AvatarCropper from './AvatarCropper.jsx'
+
+function dataUrlToFile(dataUrl) {
+  const [meta, b64] = dataUrl.split(',')
+  const mime = (meta.match(/data:(.*?);/) || [])[1] || 'image/jpeg'
+  const bin = atob(b64)
+  const arr = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i)
+  return new File([arr], 'avatar.jpg', { type: mime })
+}
 
 export default function EditProfileModal({ onClose }) {
   const [avatar, setAvatar] = useState(getAuthUser()?.avatar || '')
@@ -27,7 +36,11 @@ export default function EditProfileModal({ onClose }) {
     setSaving(true)
     setErr('')
     try {
-      const u = await api.put('/users/me', { avatar, bio: bio.trim() })
+      let avatarUrl = avatar
+      if (avatar && avatar.startsWith('data:')) {
+        avatarUrl = await uploadFile(dataUrlToFile(avatar))
+      }
+      const u = await api.put('/users/me', { avatar: avatarUrl, bio: bio.trim() })
       setAuthUser(u)
       notifyAuthChanged()
       onClose()

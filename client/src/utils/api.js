@@ -42,3 +42,15 @@ export const api = {
   put: (path, body) => request(path, { method: 'PUT', body }),
   del: (path) => request(path, { method: 'DELETE' }),
 }
+
+export async function uploadFile(file) {
+  const fd = new FormData()
+  fd.append('file', file)
+  const headers = {}
+  const t = getToken()
+  if (t) headers['Authorization'] = 'Bearer ' + t
+  const res = await fetch(BASE + '/upload', { method: 'POST', headers, body: fd })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || '上传失败')
+  return data.url
+}

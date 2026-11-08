@@ -4,6 +4,10 @@ import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 
+function isVideo(m) {
+  return typeof m === 'string' && (/^data:video\//.test(m) || /\.(mp4|webm|mov|ogg|m4v)$/i.test(m))
+}
+
 export default function PostDetail() {
   const { id } = useParams()
   const { data: post, loading, error, setData } = useApi(`/posts/${id}`)
@@ -119,7 +123,13 @@ export default function PostDetail() {
             {post.content && <p>{post.content}</p>}
             {post.media?.length > 0 && (
               <div className="detail-media">
-                {post.media.map((m, i) => <img key={i} src={m} alt={`图片${i + 1}`} loading="lazy" />)}
+                {post.media.map((m, i) =>
+                  isVideo(m) ? (
+                    <video key={i} src={m} controls className="detail-video" />
+                  ) : (
+                    <img key={i} src={m} alt={`图片${i + 1}`} loading="lazy" />
+                  ),
+                )}
               </div>
             )}
             {translation && (

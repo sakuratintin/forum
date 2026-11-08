@@ -1,17 +1,21 @@
 const fs = require('fs')
 const path = require('path')
 const express = require('express')
+const multer = require('multer')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { db, initDb } = require('./db')
 
 initDb()
 
-const app = express()
-app.use(express.json({ limit: '20mb' }))
-
 const SECRET = 'hct-forum-secret'
 const AI_KEY = process.env.AI_API_KEY || ''
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(path.dirname(process.env.DB_PATH || path.join(__dirname, 'forum.db')), 'uploads')
+fs.mkdirSync(UPLOAD_DIR, { recursive: true })
+
+const app = express()
+app.use(express.json({ limit: '20mb' }))
+app.use('/uploads', express.static(UPLOAD_DIR))
 
 function signToken(user) {
   return jwt.sign({ id: user.id, username: user.username, role: user.role }, SECRET, { expiresIn: '7d' })
@@ -393,6 +397,20 @@ app.post('/api/ai/chat', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'AI 请求失败：' + e.message })
   }
+})
+
+// ===== 文件上传（图片 / 视频 / 头像） =====
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${path.extname(file.originalname)}`),
+  }),
+  limits: { fileSize: 100 * 1024 * 1024 },
+})
+
+app.post('/api/upload', auth, upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '没有文件' })
+  res.json({ url: '/uploads/' + req.file.filename })
 })
 
 // 生产环境：托管前端构建产物（若存在）
