@@ -8,6 +8,7 @@ export default function Navbar() {
   const [boardOpen, setBoardOpen] = useState(false)
   const [user, setUser] = useState(getAuthUser)
   const [sections, setSections] = useState([])
+  const [unread, setUnread] = useState(0)
   const dropRef = useRef(null)
   const location = useLocation()
   const navigate = useNavigate()
@@ -21,6 +22,23 @@ export default function Navbar() {
   useEffect(() => {
     api.get('/sections').then((d) => setSections(d)).catch(() => setSections([]))
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setUnread(0)
+      return
+    }
+    let alive = true
+    function load() {
+      api.get('/notifications/unread').then((d) => { if (alive) setUnread(d.unread || 0) }).catch(() => {})
+    }
+    load()
+    const t = setInterval(load, 60000)
+    return () => {
+      alive = false
+      clearInterval(t)
+    }
+  }, [user])
 
   useEffect(() => {
     function onDocClick(e) {
@@ -86,6 +104,12 @@ export default function Navbar() {
         </nav>
 
         <div className="nav-actions">
+          {user && (
+            <Link to="/notifications" className="nav-bell" title="提醒" onClick={() => setOpen(false)}>
+              🔔
+              {unread > 0 && <span className="nav-bell-badge">{unread > 99 ? '99+' : unread}</span>}
+            </Link>
+          )}
           {user ? (
             <>
               <Link to={`/user/${encodeURIComponent(user.username)}`} className="nav-profile" title="个人主页">

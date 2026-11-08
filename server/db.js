@@ -155,6 +155,17 @@ function initDb() {
       content TEXT DEFAULT '',
       fetched_at TEXT DEFAULT (datetime('now','localtime'))
     );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      actor_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      post_id INTEGER,
+      reply_id INTEGER,
+      snippet TEXT DEFAULT '',
+      read INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now','localtime'))
+    );
   `)
 
   seed()

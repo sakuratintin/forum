@@ -80,6 +80,25 @@ function listWithFollow(req, rows) {
   }))
 }
 
+// ===== 通知：@提醒 + 回复提醒 =====
+function notifyMentions(content, actorId, postId, replyId) {
+  if (!content || !content.includes('@')) return
+  const users = db.prepare('SELECT id, username FROM users WHERE id <> ?').all(actorId)
+  const ins = db.prepare('INSERT INTO notifications (user_id, actor_id, type, post_id, reply_id, snippet) VALUES (?,?,?,?,?,?)')
+  const snippet = content.slice(0, 100)
+  for (const u of users) {
+    if (u.username && content.includes('@' + u.username)) {
+      ins.run(u.id, actorId, 'mention', postId || null, replyId || null, snippet)
+    }
+  }
+}
+
+function notifyReply(postAuthorId, actorId, postId, replyId, content) {
+  if (!postAuthorId || postAuthorId === actorId) return
+  db.prepare('INSERT INTO notifications (user_id, actor_id, type, post_id, reply_id, snippet) VALUES (?,?,?,?,?,?)')
+    .run(postAuthorId, actorId, 'reply', postId, replyId || null, (content || '').slice(0, 100))
+}
+
 function serializePost(p, userId) {
   const author = db.prepare('SELECT id, username, avatar, uid FROM users WHERE id = ?').get(p.author_id)
   const authorFollowing = userId && author ? !!db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').get(userId, author.id) : false
@@ -207,7 +226,9 @@ app.post('/api/posts', auth, (req, res) => {
   if (!sec) return res.status(400).json({ error: '板块不存在' })
   const info = db.prepare('INSERT INTO posts (section_id, author_id, title, content, media) VALUES (?,?,?,?,?)')
     .run(sec.id, req.user.id, title.trim(), content.trim(), JSON.stringify(Array.isArray(media) ? media : []))
-  res.json(serializePost(db.prepare('SELECT * FROM posts WHERE id = ?').get(Number(info.lastInsertRowid)), req.user.id))
+  const newPostId = Number(info.lastInsertRowid)
+  notifyMentions(content.trim(), req.user.id, newPostId)
+  res.json(serializePost(db.prepare('SELECT * FROM posts WHERE id = ?').get(newPostId), req.user.id))
 })
 
 // 编辑帖子（作者本人或管理员）
@@ -264,7 +285,7 @@ app.post('/api/posts/:id/pin', auth, (req, res) => {
 
 // ===== 回复 =====
 app.post('/api/posts/:id/replies', auth, async (req, res) => {
-  const p = db.prepare('SELECT id FROM posts WHERE id = ?').get(Number(req.params.id))
+  const p = db.prepare('SELECT id, author_id FROM posts WHERE id = ?').get(Number(req.params.id))
   if (!p) return res.status(404).json({ error: '帖子不存在' })
   const me = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
   if (me.muted) return res.status(403).json({ error: '你已被禁言，暂时无法回复' })
@@ -282,6 +303,8 @@ app.post('/api/posts/:id/replies', auth, async (req, res) => {
   }
 
   // 回复里 @EVA 时，让 AI 读取帖子与评论后作答
+  notifyMentions(content.trim(), req.user.id, p.id, r.id)
+  notifyReply(p.author_id, req.user.id, p.id, r.id, content.trim())
   const aiReply = await maybeEvaReply(p.id, content.trim())
   res.json({ ...myReply, aiReply })
 })
@@ -438,6 +461,42 @@ app.post('/api/messages/:username', auth, (req, res) => {
   if (!text && !image) return res.status(400).json({ error: '内容不能为空' })
   const info = db.prepare('INSERT INTO messages (from_id, to_id, content, image) VALUES (?,?,?,?)').run(req.user.id, other.id, text, image)
   res.json({ id: Number(info.lastInsertRowid), from_me: true, content: text, image, created_at: new Date().toISOString() })
+})
+
+// ===== 通知 =====
+app.get('/api/notifications', auth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT n.*, a.username AS actor_name, a.avatar AS actor_avatar, p.title AS post_title
+    FROM notifications n
+    JOIN users a ON a.id = n.actor_id
+    LEFT JOIN posts p ON p.id = n.post_id
+    WHERE n.user_id = ?
+    ORDER BY n.id DESC LIMIT 100
+  `).all(req.user.id)
+  const unread = db.prepare('SELECT COUNT(*) c FROM notifications WHERE user_id = ? AND read = 0').get(req.user.id).c
+  res.json({
+    unread,
+    items: rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      post_id: r.post_id,
+      reply_id: r.reply_id,
+      post_title: r.post_title || '',
+      snippet: r.snippet || '',
+      read: !!r.read,
+      created_at: r.created_at,
+      actor: { username: r.actor_name, avatar: r.actor_avatar || '' },
+    })),
+  })
+})
+
+app.get('/api/notifications/unread', auth, (req, res) => {
+  res.json({ unread: db.prepare('SELECT COUNT(*) c FROM notifications WHERE user_id = ? AND read = 0').get(req.user.id).c })
+})
+
+app.post('/api/notifications/read', auth, (req, res) => {
+  db.prepare('UPDATE notifications SET read = 1 WHERE user_id = ?').run(req.user.id)
+  res.json({ ok: true })
 })
 
 // ===== 通告 =====

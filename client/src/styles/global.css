@@ -1484,6 +1484,36 @@ body::before {
 .msg-row.grouped { margin-top: -6px; }
 .msg-empty-sub { font-size: 0.78rem; color: var(--text-muted); }
 
+/* ===== 提醒通知 ===== */
+.nav-bell {
+  position: relative; display: grid; place-items: center;
+  width: 38px; height: 38px; border-radius: 10px; font-size: 1.05rem;
+  transition: background 0.2s ease;
+}
+.nav-bell:hover { background: rgba(34, 211, 238, 0.1); }
+.nav-bell-badge {
+  position: absolute; top: 1px; right: 1px; min-width: 16px; height: 16px;
+  padding: 0 4px; border-radius: 999px; font-size: 0.62rem; line-height: 16px;
+  text-align: center; font-weight: 600; color: #041018; background: var(--cyan-bright);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+}
+.notify-list { display: flex; flex-direction: column; gap: 10px; }
+.notify-item {
+  display: flex; gap: 12px; padding: 14px 16px; border-radius: 12px;
+  border: 1px solid var(--line); background: rgba(22, 34, 58, 0.4);
+  transition: all 0.2s ease;
+}
+.notify-item:hover { border-color: var(--cyan); box-shadow: var(--glow); }
+.notify-item.unread { border-left: 3px solid var(--cyan); background: rgba(34, 211, 238, 0.07); }
+.notify-item .avatar { width: 38px; height: 38px; flex: none; }
+.notify-main { flex: 1; min-width: 0; }
+.notify-title { color: var(--text); font-size: 0.9rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.notify-title b { color: var(--cyan-bright); font-weight: 500; }
+.notify-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan-bright); box-shadow: 0 0 8px var(--cyan); }
+.notify-post { color: var(--text-muted); font-size: 0.84rem; margin-top: 4px; }
+.notify-snippet { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notify-time { color: var(--text-muted); font-size: 0.72rem; margin-top: 6px; }
+
 /* ===== 移动端性能与输入优化（解决输入法卡顿/缩放） ===== */
 @media (max-width: 768px) {
   /* 关闭昂贵的毛玻璃效果，避免输入法弹起、滚动时掉帧 */
