@@ -28,8 +28,8 @@ export default function Profile() {
 
   async function handleFollow() {
     try {
-      const r = await api.post(`/users/${user.username}/follow`)
-      setData({ ...user, is_following: r.following, followers: (user.followers || 0) + (r.following ? 1 : -1) })
+      await api.post(`/users/${user.username}/follow`)
+      reload()
     } catch { /* ignore */ }
   }
 
@@ -61,6 +61,7 @@ export default function Profile() {
               <h1 className="profile-name">
                 {user.username}
                 {user.muted && <span className="muted-badge">已禁言</span>}
+                {user.is_mutual && <span className="mutual-badge">互相关注</span>}
               </h1>
               <p className="profile-bio">{user.bio || '这个人很懒，还没有填写简介。'}</p>
               <p className="profile-join">加入于 {user.created_at?.slice(0, 10)}</p>
@@ -71,7 +72,7 @@ export default function Profile() {
               ) : (
                 <>
                   <button type="button" className={`btn ${user.is_following ? 'btn-ghost' : 'btn-primary'}`} onClick={handleFollow}>
-                    {user.is_following ? '已关注 ✓' : '＋ 关注'}
+                    {user.is_mutual ? '互相关注 ✓' : user.is_following ? '已关注 ✓' : '＋ 关注'}
                   </button>
                   {user.is_mutual ? (
                     <Link to={`/messages/${encodeURIComponent(user.username)}`} className="btn btn-ghost">私信</Link>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../utils/api.js'
+import FollowButton from './FollowButton.jsx'
 
 export default function UserListModal({ open, title, path, onClose }) {
   const [users, setUsers] = useState([])
@@ -34,6 +35,7 @@ export default function UserListModal({ open, title, path, onClose }) {
                   <span className="userlist-name">{u.username}{u.muted ? <span className="muted-badge">已禁言</span> : null}</span>
                   <span className="userlist-sub">{u.bio || '这个人很懒，还没有填写简介。'} · 帖子 {u.post_count || 0}</span>
                 </div>
+                <FollowButton username={u.username} initialFollowing={u.is_following} />
               </Link>
             ))
           )}

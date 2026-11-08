@@ -59,6 +59,16 @@ function publicUser(u) {
   }
 }
 
+// 用户列表附带「当前登录用户是否已关注 TA」
+function listWithFollow(req, rows) {
+  const me = req.user?.id
+  return rows.map((x) => ({
+    ...publicUser(x),
+    post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(x.id).c,
+    is_following: me ? !!db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').get(me, x.id) : false,
+  }))
+}
+
 function serializePost(p, userId) {
   const author = db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(p.author_id)
   const section = db.prepare('SELECT slug, name FROM sections WHERE id = ?').get(p.section_id)
@@ -228,24 +238,21 @@ app.get('/api/users', optionalAuth, (req, res) => {
   const rows = q
     ? db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE username LIKE ? ORDER BY id ASC LIMIT 50').all(`%${q}%`)
     : db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC LIMIT 50').all()
-  res.json(rows.map((u) => ({
-    ...publicUser(u),
-    post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(u.id).c,
-  })))
+  res.json(listWithFollow(req, rows))
 })
 
 app.get('/api/users/:username/followers', optionalAuth, (req, res) => {
   const u = db.prepare('SELECT id FROM users WHERE username = ?').get(req.params.username)
   if (!u) return res.status(404).json({ error: '用户不存在' })
   const rows = db.prepare('SELECT us.id, us.username, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.follower_id WHERE f.following_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
-  res.json(rows.map((x) => ({ ...publicUser(x), post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(x.id).c })))
+  res.json(listWithFollow(req, rows))
 })
 
 app.get('/api/users/:username/following', optionalAuth, (req, res) => {
   const u = db.prepare('SELECT id FROM users WHERE username = ?').get(req.params.username)
   if (!u) return res.status(404).json({ error: '用户不存在' })
   const rows = db.prepare('SELECT us.id, us.username, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.following_id WHERE f.follower_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
-  res.json(rows.map((x) => ({ ...publicUser(x), post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(x.id).c })))
+  res.json(listWithFollow(req, rows))
 })
 
 app.get('/api/users/:username', optionalAuth, (req, res) => {

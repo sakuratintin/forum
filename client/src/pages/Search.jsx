@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
+import FollowButton from '../components/FollowButton.jsx'
 
 export default function Search() {
   const [searchParams] = useSearchParams()
@@ -98,6 +99,7 @@ export default function Search() {
                           <div className="user-card-bio">{u.bio || '这个人很懒，还没有填写简介。'}</div>
                           <div className="user-card-stat">帖子 {u.post_count || 0}</div>
                         </div>
+                        <FollowButton username={u.username} initialFollowing={u.is_following} />
                       </Link>
                     ))}
                   </div>
