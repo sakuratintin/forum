@@ -68,9 +68,7 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="form-hint" style={{ marginTop: 14, textAlign: 'center' }}>
-            演示账号：管理员 / admin123（管理员），阿泽 / 123456（普通用户）
-          </p>
+
         </div>
       </div>
     </div>
