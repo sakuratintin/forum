@@ -71,6 +71,15 @@ export default function Navbar() {
           <NavLink to="/messages" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>私信</NavLink>
           <NavLink to="/search" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>搜索</NavLink>
           <NavLink to="/hot" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>热点</NavLink>
+          <a
+            href="https://xfurqukmczhp.sealosgzg.site/"
+            className="nav-link nav-external"
+            target="_blank"
+            rel="noreferrer noopener"
+            onClick={() => { setOpen(false); setBoardOpen(false) }}
+          >
+            图库 <span className="nav-caret">↗</span>
+          </a>
           {user?.role === 'admin' && (
             <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={() => setOpen(false)}>管理</NavLink>
           )}
