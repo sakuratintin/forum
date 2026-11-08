@@ -64,7 +64,7 @@ export default function Profile() {
                 {user.is_mutual && <span className="mutual-badge">互相关注</span>}
               </h1>
               <p className="profile-bio">{user.bio || '这个人很懒，还没有填写简介。'}</p>
-              <p className="profile-join">加入于 {user.created_at?.slice(0, 10)}</p>
+              <p className="profile-join">UID: {user.uid || '—'} · 加入于 {user.created_at?.slice(0, 10)}</p>
             </div>
             <div className="profile-actions">
               {isSelf ? (

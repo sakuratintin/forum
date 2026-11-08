@@ -33,7 +33,7 @@ export default function UserListModal({ open, title, path, onClose }) {
                 <span className="avatar">{u.avatar ? <img src={u.avatar} alt="" className="avatar-img" /> : u.username[0]}</span>
                 <div className="userlist-main">
                   <span className="userlist-name">{u.username}{u.muted ? <span className="muted-badge">已禁言</span> : null}</span>
-                  <span className="userlist-sub">{u.bio || '这个人很懒，还没有填写简介。'} · 帖子 {u.post_count || 0}</span>
+                  <span className="userlist-sub">UID {u.uid || '—'} · {u.bio || '这个人很懒，还没有填写简介。'} · 帖子 {u.post_count || 0}</span>
                 </div>
                 <FollowButton username={u.username} initialFollowing={u.is_following} />
               </Link>

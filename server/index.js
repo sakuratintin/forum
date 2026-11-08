@@ -51,6 +51,7 @@ function publicUser(u) {
   return {
     id: u.id,
     username: u.username,
+    uid: u.uid || '',
     bio: u.bio,
     avatar: u.avatar,
     role: u.role,
@@ -107,7 +108,9 @@ app.post('/api/auth/register', (req, res) => {
   if (password.length < 6) return res.status(400).json({ error: '密码至少 6 位' })
   if (db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim())) return res.status(409).json({ error: '用户名已存在' })
   const info = db.prepare('INSERT INTO users (username, password) VALUES (?,?)').run(username.trim(), bcrypt.hashSync(password, 10))
-  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(info.lastInsertRowid))
+  const newId = Number(info.lastInsertRowid)
+  db.prepare('UPDATE users SET uid = ? WHERE id = ?').run(String(100000 + newId), newId)
+  const u = db.prepare('SELECT * FROM users WHERE id = ?').get(newId)
   res.json({ token: signToken(u), user: publicUser(u) })
 })
 
@@ -292,22 +295,22 @@ async function maybeEvaReply(postId, content) {
 app.get('/api/users', optionalAuth, (req, res) => {
   const q = (req.query.q || '').trim()
   const rows = q
-    ? db.prepare("SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE role <> 'ai' AND username LIKE ? ORDER BY id ASC LIMIT 50").all(`%${q}%`)
-    : db.prepare("SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE role <> 'ai' ORDER BY id ASC LIMIT 50").all()
+    ? db.prepare("SELECT id, username, uid, bio, avatar, role, muted, created_at FROM users WHERE role <> 'ai' AND (username LIKE ? OR uid LIKE ?) ORDER BY id ASC LIMIT 50").all(`%${q}%`, `%${q}%`)
+    : db.prepare("SELECT id, username, uid, bio, avatar, role, muted, created_at FROM users WHERE role <> 'ai' ORDER BY id ASC LIMIT 50").all()
   res.json(listWithFollow(req, rows))
 })
 
 app.get('/api/users/:username/followers', optionalAuth, (req, res) => {
   const u = db.prepare('SELECT id FROM users WHERE username = ?').get(req.params.username)
   if (!u) return res.status(404).json({ error: '用户不存在' })
-  const rows = db.prepare('SELECT us.id, us.username, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.follower_id WHERE f.following_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
+  const rows = db.prepare('SELECT us.id, us.username, us.uid, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.follower_id WHERE f.following_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
   res.json(listWithFollow(req, rows))
 })
 
 app.get('/api/users/:username/following', optionalAuth, (req, res) => {
   const u = db.prepare('SELECT id FROM users WHERE username = ?').get(req.params.username)
   if (!u) return res.status(404).json({ error: '用户不存在' })
-  const rows = db.prepare('SELECT us.id, us.username, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.following_id WHERE f.follower_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
+  const rows = db.prepare('SELECT us.id, us.username, us.uid, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.following_id WHERE f.follower_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
   res.json(listWithFollow(req, rows))
 })
 

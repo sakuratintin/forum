@@ -33,6 +33,7 @@ function initDb() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
+      uid TEXT,
       password TEXT NOT NULL,
       bio TEXT DEFAULT '',
       avatar TEXT DEFAULT '',
@@ -100,6 +101,19 @@ function initDb() {
 
   seed()
   cleanDemoData()
+  ensureUid()
+}
+
+// 确保 users.uid 列存在，并给没有 UID 的用户补齐（100000 + 用户 id）
+function ensureUid() {
+  const cols = db.prepare('PRAGMA table_info(users)').all()
+  if (!cols.some((c) => c.name === 'uid')) {
+    db.exec('ALTER TABLE users ADD COLUMN uid TEXT')
+  }
+  const rows = db.prepare("SELECT id FROM users WHERE uid IS NULL OR uid = ''").all()
+  for (const u of rows) {
+    db.prepare('UPDATE users SET uid = ? WHERE id = ?').run(String(100000 + u.id), u.id)
+  }
 }
 
 function seed() {

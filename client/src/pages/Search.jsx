@@ -79,7 +79,7 @@ export default function Search() {
                             {u.muted ? <span className="muted-badge">已禁言</span> : null}
                           </div>
                           <div className="user-card-bio">{u.bio || '这个人很懒，还没有填写简介。'}</div>
-                          <div className="user-card-stat">帖子 {u.post_count || 0}</div>
+                          <div className="user-card-stat">UID {u.uid || '—'} · 帖子 {u.post_count || 0}</div>
                         </div>
                         <FollowButton username={u.username} initialFollowing={u.is_following} />
                       </Link>
