@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
+import PostRow from '../components/PostRow.jsx'
 
 const SORTS = [
   { key: 'latest', label: '最新' },
   { key: 'hot', label: '热门' },
 ]
-const PAGE_SIZE = 5
+const PAGE_SIZE = 10
 
 export default function PostList() {
   const { slug } = useParams()
   const [sort, setSort] = useState('latest')
   const [page, setPage] = useState(1)
-  const navigate = useNavigate()
 
   const { data: sections, loading: sLoading } = useApi('/sections')
   const section = (sections || []).find((s) => s.slug === slug)
@@ -35,9 +35,12 @@ export default function PostList() {
     <div className="page">
       <div className="container">
         <div className="board-head">
-          <div>
-            <h1 className="board-title">{section.name}</h1>
-            <p className="board-desc">{section.description}</p>
+          <div className="board-head-main">
+            <span className="section-card-icon board-icon">{section.icon || section.name[0]}</span>
+            <div>
+              <h1 className="board-title">{section.name}</h1>
+              <p className="board-desc">{section.description}</p>
+            </div>
           </div>
           <Link to={`/new?section=${slug}`} className="btn btn-primary">＋ 发帖</Link>
         </div>
@@ -65,31 +68,7 @@ export default function PostList() {
         ) : (
           <div className="post-list">
             {posts.map((p, i) => (
-              <Link to={`/post/${p.id}`} className="post-item fade-up" style={{ animationDelay: `${i * 40}ms` }} key={p.id}>
-                <div className="post-main">
-                  <h3 className="post-title">
-                    {p.pinned && <span className="post-tag pinned">置顶</span>}
-                    {p.hot && <span className="post-tag hot">热门</span>}
-                    {p.media?.length > 0 && <span className="post-media" title="含附件">🖼</span>}
-                    {p.title}
-                  </h3>
-                  <div className="post-meta">
-                    <span className="avatar avatar-xs">{p.author?.avatar ? <img src={p.author.avatar} alt="" className="avatar-img" /> : p.author?.username?.[0]}</span>
-                    <span
-                      className="post-author author-link"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/user/${encodeURIComponent(p.author?.username)}`) }}
-                    >
-                      {p.author?.username}
-                    </span>
-                    <span>·</span>
-                    <span>{p.created_at}</span>
-                  </div>
-                </div>
-                <div className="post-stats">
-                  <span className="post-stat">💬 {p.reply_count}</span>
-                  <span className="post-stat">{p.liked ? '❤️' : '👍'} {p.like_count}</span>
-                </div>
-              </Link>
+              <PostRow key={p.id} p={p} delay={i * 40} />
             ))}
           </div>
         )}

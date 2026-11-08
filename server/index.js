@@ -74,6 +74,7 @@ function serializePost(p, userId) {
   const section = db.prepare('SELECT slug, name FROM sections WHERE id = ?').get(p.section_id)
   const likeCount = db.prepare('SELECT COUNT(*) c FROM likes WHERE post_id = ?').get(p.id).c
   const replyCount = db.prepare('SELECT COUNT(*) c FROM replies WHERE post_id = ?').get(p.id).c
+  const lastReply = db.prepare('SELECT MAX(created_at) AS t FROM replies WHERE post_id = ?').get(p.id)
   const liked = userId ? !!db.prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?').get(p.id, userId) : false
   let media = []
   try { media = JSON.parse(p.media || '[]') } catch { media = [] }
@@ -85,8 +86,10 @@ function serializePost(p, userId) {
     pinned: !!p.pinned,
     hot: !!p.hot,
     created_at: p.created_at,
+    last_reply_at: lastReply ? lastReply.t : null,
     author,
     section: section ? section.name : '',
+    section_slug: section ? section.slug : '',
     like_count: likeCount,
     reply_count: replyCount,
     liked,

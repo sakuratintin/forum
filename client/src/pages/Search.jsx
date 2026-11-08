@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import FollowButton from '../components/FollowButton.jsx'
+import PostRow from '../components/PostRow.jsx'
 
 export default function Search() {
   const [searchParams] = useSearchParams()
@@ -55,26 +56,7 @@ export default function Search() {
                 ) : (
                   <div className="post-list">
                     {posts.map((p, i) => (
-                      <Link to={`/post/${p.id}`} className="post-item fade-up" style={{ animationDelay: `${i * 30}ms` }} key={p.id}>
-                        <div className="post-main">
-                          <h3 className="post-title">
-                            {p.pinned && <span className="post-tag pinned">置顶</span>}
-                            {p.title}
-                          </h3>
-                          <div className="post-meta">
-                            <span className="avatar avatar-xs">{p.author?.avatar ? <img src={p.author.avatar} alt="" className="avatar-img" /> : p.author?.username?.[0]}</span>
-                            <span className="post-author">{p.author?.username}</span>
-                            <span>·</span>
-                            <span>{p.created_at}</span>
-                            <span>·</span>
-                            <span>{p.section}</span>
-                          </div>
-                        </div>
-                        <div className="post-stats">
-                          <span className="post-stat">💬 {p.reply_count}</span>
-                          <span className="post-stat">{p.liked ? '❤️' : '👍'} {p.like_count}</span>
-                        </div>
-                      </Link>
+                      <PostRow key={p.id} p={p} delay={i * 30} showSection />
                     ))}
                   </div>
                 )}
