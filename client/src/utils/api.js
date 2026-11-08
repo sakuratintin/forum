@@ -52,8 +52,7 @@ function authHeaders() {
   return headers
 }
 
-export async function uploadFile(file) {
-  // 小文件直接传；大文件分片传（绕过网关请求体大小限制）
+export async function uploadFile(file) {  // 小文件直接传；大文件分片传（绕过网关请求体大小限制）
   if (!file || file.size <= 2 * 1024 * 1024) {
     const fd = new FormData()
     fd.append('file', file)
@@ -83,4 +82,13 @@ export async function uploadFile(file) {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || '上传失败')
   return data.url
+}
+
+export async function transcribeFile(blob, filename = 'voice.webm') {
+  const fd = new FormData()
+  fd.append('file', blob, filename)
+  const res = await fetch(BASE + '/ai/transcribe', { method: 'POST', headers: authHeaders(), body: fd })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || '语音识别失败')
+  return data.text || ''
 }

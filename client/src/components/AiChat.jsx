@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api } from '../utils/api.js'
+import { api, transcribeFile } from '../utils/api.js'
 
 const SYSTEM = '你是 H.C.T. Forum 论坛的 AI 助手，请用简洁、友好的中文回答用户的问题。'
 const STORAGE_KEY = 'forum_ai_chat'
@@ -24,6 +24,59 @@ function MicIcon() {
   )
 }
 
+// 把 AudioBuffer 编码成 16bit PCM 的 WAV（智谱语音识别只收 wav/mp3）
+function audioBufferToWav(buffer) {
+  const numCh = buffer.numberOfChannels
+  const sampleRate = buffer.sampleRate
+  const samples = buffer.length
+  const dataSize = samples * numCh * 2
+  const ab = new ArrayBuffer(44 + dataSize)
+  const view = new DataView(ab)
+  const writeStr = (off, s) => {
+    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i))
+  }
+  writeStr(0, 'RIFF')
+  view.setUint32(4, 36 + dataSize, true)
+  writeStr(8, 'WAVE')
+  writeStr(12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, numCh, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * numCh * 2, true)
+  view.setUint16(32, numCh * 2, true)
+  view.setUint16(34, 16, true)
+  writeStr(36, 'data')
+  view.setUint32(40, dataSize, true)
+  const channels = []
+  for (let c = 0; c < numCh; c++) channels.push(buffer.getChannelData(c))
+  let off = 44
+  for (let i = 0; i < samples; i++) {
+    for (let c = 0; c < numCh; c++) {
+      const s = Math.max(-1, Math.min(1, channels[c][i]))
+      view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7fff, true)
+      off += 2
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' })
+}
+
+async function toWav(blob) {
+  const arrayBuffer = await blob.arrayBuffer()
+  const Ctx = window.AudioContext || window.webkitAudioContext
+  const ctx = new Ctx()
+  try {
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+    return audioBufferToWav(audioBuffer)
+  } finally {
+    try {
+      ctx.close()
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 export default function AiChat() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState(() => {
@@ -37,8 +90,10 @@ export default function AiChat() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [listening, setListening] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
   const bodyRef = useRef(null)
   const recRef = useRef(null)
+  const chunksRef = useRef([])
 
   useEffect(() => {
     try {
@@ -52,7 +107,13 @@ export default function AiChat() {
     if (open) setTimeout(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }), 30)
   }, [open])
 
-  useEffect(() => () => recRef.current?.abort?.(), [])
+  useEffect(() => () => {
+    try {
+      recRef.current?.stop?.()
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   async function send(content) {
     const msg = (content ?? text).trim()
@@ -88,37 +149,65 @@ export default function AiChat() {
     }
   }
 
-  function startVoice() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) {
-      setError('当前浏览器不支持语音输入，建议用 Chrome 或 Edge')
+  async function startVoice() {
+    if (listening || transcribing) return
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setError('当前浏览器不支持录音，请用 Chrome / Edge')
       return
     }
     try {
-      const rec = new SR()
-      rec.lang = 'zh-CN'
-      rec.interimResults = false
-      rec.maxAlternatives = 1
-      rec.onstart = () => setListening(true)
-      rec.onend = () => setListening(false)
-      rec.onerror = (e) => {
-        setListening(false)
-        setError('语音识别失败：' + (e.error || '未知错误'))
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+      chunksRef.current = []
+      rec.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data)
       }
-      rec.onresult = (e) => {
-        const t = e.results[0][0].transcript
-        setText((prev) => (prev ? prev + t : t))
+      const timer = setTimeout(() => {
+        try {
+          rec.stop()
+        } catch {
+          /* ignore */
+        }
+      }, 30000)
+      rec.onstop = async () => {
+        clearTimeout(timer)
+        try {
+          stream.getTracks().forEach((t) => t.stop())
+        } catch {
+          /* ignore */
+        }
+        const raw = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
+        setListening(false)
+        if (!raw.size) return
+        setTranscribing(true)
+        setError('')
+        try {
+          const wav = await toWav(raw)
+          const t = await transcribeFile(wav, 'voice.wav')
+          if (t) setText((prev) => (prev ? prev + t : t))
+          else setError('没有识别到内容，请再说一次')
+        } catch (ex) {
+          setError('语音识别失败：' + ex.message)
+        } finally {
+          setTranscribing(false)
+        }
       }
       recRef.current = rec
       rec.start()
+      setListening(true)
+      setError('')
     } catch (ex) {
-      setError('语音功能启动失败：' + ex.message)
+      setError(ex.name === 'NotAllowedError' ? '请允许浏览器使用麦克风' : '无法录音：' + ex.message)
     }
   }
 
   function stopVoice() {
-    recRef.current?.stop?.()
-    setListening(false)
+    try {
+      recRef.current?.stop?.()
+    } catch {
+      /* ignore */
+    }
   }
 
   return (
@@ -158,8 +247,8 @@ export default function AiChat() {
               type="button"
               className={`ai-mic${listening ? ' listening' : ''}`}
               onClick={listening ? stopVoice : startVoice}
-              disabled={loading}
-              title="语音输入"
+              disabled={loading || transcribing}
+              title={listening ? '结束录音' : '语音输入'}
             >
               <MicIcon />
             </button>
@@ -167,10 +256,10 @@ export default function AiChat() {
               className="input"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={listening ? '聆听中…' : '问点什么…'}
+              placeholder={transcribing ? '正在识别语音…' : listening ? '正在录音（最长 30 秒），再点一下结束…' : '问点什么…'}
               disabled={loading}
             />
-            <button type="submit" className="btn btn-primary" disabled={loading || !text.trim()}>发送</button>
+            <button type="submit" className="btn btn-primary" disabled={loading || transcribing || !text.trim()}>发送</button>
           </form>
         </div>
       )}

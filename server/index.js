@@ -467,6 +467,30 @@ app.post('/api/ai/chat', async (req, res) => {
   }
 })
 
+// ===== AI 语音识别（智谱 ASR） =====
+const asrUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
+
+app.post('/api/ai/transcribe', auth, asrUpload.single('file'), async (req, res) => {
+  if (!AI_KEY) return res.status(503).json({ error: 'AI 未配置，请设置环境变量 AI_API_KEY' })
+  if (!req.file) return res.status(400).json({ error: '没有音频文件' })
+  try {
+    const fd = new FormData()
+    fd.append('model', 'glm-asr-2512')
+    fd.append('stream', 'false')
+    fd.append('file', new Blob([req.file.buffer], { type: req.file.mimetype || 'audio/webm' }), req.file.originalname || 'voice.webm')
+    const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + AI_KEY },
+      body: fd,
+    })
+    const data = await resp.json()
+    if (!resp.ok) return res.status(resp.status).json({ error: (data && data.error && data.error.message) || '语音识别失败' })
+    res.json({ text: data.text || '' })
+  } catch (e) {
+    res.status(500).json({ error: '语音识别失败：' + e.message })
+  }
+})
+
 // ===== 文件上传（图片 / 视频 / 头像） =====
 const upload = multer({
   storage: multer.diskStorage({
