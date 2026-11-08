@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
+import ConfirmDialog from '../components/ConfirmDialog.jsx'
 
 export default function PostDetail() {
   const { id } = useParams()
@@ -12,8 +13,11 @@ export default function PostDetail() {
   const [submitting, setSubmitting] = useState(false)
   const [translation, setTranslation] = useState('')
   const [translating, setTranslating] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const replyRef = useRef(null)
   const user = getAuthUser()
+  const navigate = useNavigate()
 
   if (loading && !post) {
     return <div className="page"><div className="container post-empty">加载中…</div></div>
@@ -27,6 +31,7 @@ export default function PostDetail() {
 
   const sectionSlug = (sections || []).find((s) => s.name === post.section)?.slug
   const mutedMe = !!user?.muted
+  const canDelete = !!user && (post.author?.id === user.id || user.role === 'admin')
 
   async function handleLike() {
     try {
@@ -64,6 +69,19 @@ export default function PostDetail() {
       setReplyErr(ex.message)
     } finally {
       setTranslating(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      await api.del(`/posts/${post.id}`)
+      navigate(sectionSlug ? `/section/${sectionSlug}` : '/')
+    } catch (ex) {
+      setReplyErr(ex.message)
+      setShowDelete(false)
+      setDeleting(false)
     }
   }
 
@@ -121,6 +139,9 @@ export default function PostDetail() {
             <button type="button" className="action-btn" onClick={handleTranslate} disabled={translating}>
               {translating ? '翻译中…' : '🌐 翻译'}
             </button>
+            {canDelete && (
+              <button type="button" className="action-btn action-danger" onClick={() => setShowDelete(true)}>🗑 删除</button>
+            )}
           </footer>
         </article>
 
@@ -160,6 +181,16 @@ export default function PostDetail() {
           </form>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={showDelete}
+        title="删除帖子"
+        message="确定要删除这篇帖子吗？删除后无法恢复。"
+        confirmText={deleting ? '删除中…' : '删除'}
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setShowDelete(false)}
+      />
     </div>
   )
 }

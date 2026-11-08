@@ -3,11 +3,14 @@ import { useParams, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
 import EditProfileModal from '../components/EditProfileModal.jsx'
+import ConfirmDialog from '../components/ConfirmDialog.jsx'
 
 export default function Profile() {
   const { username } = useParams()
   const { data: user, loading, error, setData, reload } = useApi(`/users/${username}`)
   const [editing, setEditing] = useState(false)
+  const [confirmPost, setConfirmPost] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const me = getAuthUser()
   const isSelf = me?.username === username
 
@@ -26,6 +29,20 @@ export default function Profile() {
       const r = await api.post(`/users/${user.username}/follow`)
       setData({ ...user, is_following: r.following, followers: (user.followers || 0) + (r.following ? 1 : -1) })
     } catch { /* ignore */ }
+  }
+
+  async function handleDeletePost() {
+    if (!confirmPost || deleting) return
+    setDeleting(true)
+    try {
+      await api.del(`/posts/${confirmPost.id}`)
+      setConfirmPost(null)
+      reload()
+    } catch {
+      /* ignore */
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -90,6 +107,14 @@ export default function Profile() {
                   <div className="post-stats">
                     <span className="post-stat">💬 {p.reply_count}</span>
                     <span className="post-stat">{p.liked ? '❤️' : '👍'} {p.like_count}</span>
+                    {isSelf && (
+                      <button
+                        type="button"
+                        className="post-del-btn"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmPost(p) }}
+                        title="删除帖子"
+                      >🗑</button>
+                    )}
                   </div>
                 </Link>
               ))}
@@ -98,6 +123,16 @@ export default function Profile() {
         </section>
 
         {isSelf && editing && <EditProfileModal onClose={() => { setEditing(false); reload() }} />}
+
+        <ConfirmDialog
+          open={!!confirmPost}
+          title="删除帖子"
+          message={confirmPost ? `确定要删除帖子「${confirmPost.title}」吗？删除后无法恢复。` : ''}
+          confirmText={deleting ? '删除中…' : '删除'}
+          danger
+          onConfirm={handleDeletePost}
+          onCancel={() => setConfirmPost(null)}
+        />
       </div>
     </div>
   )

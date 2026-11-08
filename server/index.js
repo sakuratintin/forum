@@ -219,6 +219,17 @@ app.post('/api/posts/:id/replies', auth, (req, res) => {
 })
 
 // ===== 用户 =====
+app.get('/api/users', optionalAuth, (req, res) => {
+  const q = (req.query.q || '').trim()
+  const rows = q
+    ? db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE username LIKE ? ORDER BY id ASC LIMIT 50').all(`%${q}%`)
+    : db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC LIMIT 50').all()
+  res.json(rows.map((u) => ({
+    ...publicUser(u),
+    post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(u.id).c,
+  })))
+})
+
 app.get('/api/users/:username', optionalAuth, (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE username = ?').get(req.params.username)
   if (!u) return res.status(404).json({ error: '用户不存在' })

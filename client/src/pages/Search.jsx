@@ -6,11 +6,15 @@ export default function Search() {
   const [searchParams] = useSearchParams()
   const q = searchParams.get('q') || ''
   const [input, setInput] = useState(q)
+  const [tab, setTab] = useState('posts')
   const navigate = useNavigate()
 
-  const { data, loading } = useApi(`/posts?q=${encodeURIComponent(q)}&pageSize=50`)
-  const posts = data?.posts || []
-  const total = data?.total || 0
+  const { data: postData, loading: postLoading } = useApi(`/posts?q=${encodeURIComponent(q)}&pageSize=50`)
+  const { data: userData, loading: userLoading } = useApi(`/users?q=${encodeURIComponent(q)}`)
+
+  const posts = postData?.posts || []
+  const postTotal = postData?.total || 0
+  const users = userData || []
 
   function onSubmit(e) {
     e.preventDefault()
@@ -23,7 +27,7 @@ export default function Search() {
       <div className="container">
         <div className="page-head">
           <h1 className="page-title">搜索</h1>
-          <p className="page-sub">搜索帖子标题和内容</p>
+          <p className="page-sub">搜索帖子或用户</p>
         </div>
 
         <form className="search-bar" onSubmit={onSubmit}>
@@ -31,41 +35,75 @@ export default function Search() {
           <button type="submit" className="btn btn-primary">搜索</button>
         </form>
 
-        {q ? (
+        {!q ? (
+          <div className="post-empty">输入关键词开始搜索</div>
+        ) : (
           <>
-            <p className="search-count">找到 {total} 条与「{q}」相关的帖子</p>
-            {loading ? (
-              <div className="post-empty">搜索中…</div>
-            ) : posts.length === 0 ? (
-              <div className="post-empty">没有找到相关帖子</div>
+            <div className="board-tabs search-tabs">
+              <button type="button" className={`board-tab${tab === 'posts' ? ' active' : ''}`} onClick={() => setTab('posts')}>帖子</button>
+              <button type="button" className={`board-tab${tab === 'users' ? ' active' : ''}`} onClick={() => setTab('users')}>用户</button>
+            </div>
+
+            {tab === 'posts' ? (
+              <>
+                <p className="search-count">找到 {postTotal} 条与「{q}」相关的帖子</p>
+                {postLoading ? (
+                  <div className="post-empty">搜索中…</div>
+                ) : posts.length === 0 ? (
+                  <div className="post-empty">没有找到相关帖子</div>
+                ) : (
+                  <div className="post-list">
+                    {posts.map((p, i) => (
+                      <Link to={`/post/${p.id}`} className="post-item fade-up" style={{ animationDelay: `${i * 30}ms` }} key={p.id}>
+                        <div className="post-main">
+                          <h3 className="post-title">
+                            {p.pinned && <span className="post-tag pinned">置顶</span>}
+                            {p.title}
+                          </h3>
+                          <div className="post-meta">
+                            <span className="post-author">{p.author?.username}</span>
+                            <span>·</span>
+                            <span>{p.created_at}</span>
+                            <span>·</span>
+                            <span>{p.section}</span>
+                          </div>
+                        </div>
+                        <div className="post-stats">
+                          <span className="post-stat">💬 {p.reply_count}</span>
+                          <span className="post-stat">{p.liked ? '❤️' : '👍'} {p.like_count}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
-              <div className="post-list">
-                {posts.map((p, i) => (
-                  <Link to={`/post/${p.id}`} className="post-item fade-up" style={{ animationDelay: `${i * 30}ms` }} key={p.id}>
-                    <div className="post-main">
-                      <h3 className="post-title">
-                        {p.pinned && <span className="post-tag pinned">置顶</span>}
-                        {p.title}
-                      </h3>
-                      <div className="post-meta">
-                        <span className="post-author">{p.author?.username}</span>
-                        <span>·</span>
-                        <span>{p.created_at}</span>
-                        <span>·</span>
-                        <span>{p.section}</span>
-                      </div>
-                    </div>
-                    <div className="post-stats">
-                      <span className="post-stat">💬 {p.reply_count}</span>
-                      <span className="post-stat">{p.liked ? '❤️' : '👍'} {p.like_count}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <>
+                <p className="search-count">找到 {users.length} 位与「{q}」相关的用户</p>
+                {userLoading ? (
+                  <div className="post-empty">搜索中…</div>
+                ) : users.length === 0 ? (
+                  <div className="post-empty">没有找到相关用户</div>
+                ) : (
+                  <div className="user-grid">
+                    {users.map((u) => (
+                      <Link to={`/user/${encodeURIComponent(u.username)}`} key={u.id} className="user-card fade-up">
+                        <span className="avatar">{u.avatar ? <img src={u.avatar} alt="" className="avatar-img" /> : u.username[0]}</span>
+                        <div className="user-card-main">
+                          <div className="user-card-name">
+                            {u.username}
+                            {u.muted ? <span className="muted-badge">已禁言</span> : null}
+                          </div>
+                          <div className="user-card-bio">{u.bio || '这个人很懒，还没有填写简介。'}</div>
+                          <div className="user-card-stat">帖子 {u.post_count || 0}</div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </>
-        ) : (
-          <div className="post-empty">输入关键词开始搜索</div>
         )}
       </div>
     </div>
