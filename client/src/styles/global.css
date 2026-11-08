@@ -1626,3 +1626,55 @@ body::before {
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ===== 移动端布局精修（统一尺寸、避免挤压） ===== */
+@media (max-width: 640px) {
+  /* 页面留白与容器宽度 */
+  .page { padding: 40px 0 48px; }
+  .container { width: calc(100% - 28px); }
+
+  /* 卡片/表单内边距统一收紧 */
+  .form-card { padding: 22px 16px; }
+  .page-card { padding: 32px 20px; }
+  .section-card { padding: 20px 18px; }
+
+  /* 帖子条目：统计信息换行到底部，不再挤压标题 */
+  .post-item { flex-wrap: wrap; gap: 8px; padding: 14px; }
+  .post-stats { width: 100%; justify-content: flex-start; gap: 14px; }
+  .post-title { font-size: 0.98rem; }
+
+  /* 版块切换条：横向滑动，避免折成三行 */
+  .board-switcher {
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px; scrollbar-width: none;
+  }
+  .board-switch { flex: none; }
+  .board-switcher::-webkit-scrollbar { display: none; }
+
+  /* 详情页操作栏与标题 */
+  .detail-actions { gap: 8px; }
+  .action-btn { padding: 7px 12px; font-size: 0.82rem; }
+  .detail-title { font-size: 1.35rem; line-height: 1.4; }
+
+  /* 私信 */
+  .msg-input { padding: 10px 12px; gap: 8px; }
+  .msg-input .btn { padding: 10px 14px; }
+  .msg-chat { min-height: 380px; }
+
+  /* Hero 数据 */
+  .hero-stat { padding: 0 16px; }
+  .hero-stat-num { font-size: 1.5rem; }
+
+  /* 其它 */
+  .hot-card { padding: 16px; }
+  .home-side { gap: 14px; }
+}
+
+@media (max-width: 480px) {
+  .hero-stats { gap: 6px; }
+  .hero-stat { padding: 0 12px; }
+  .hero-stat-num { font-size: 1.3rem; }
+  .board-tabs { flex-wrap: wrap; }
+  .detail-meta { font-size: 0.8rem; gap: 8px; }
+  .post-stats { font-size: 0.8rem; }
+}
