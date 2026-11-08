@@ -102,6 +102,7 @@ function initDb() {
       category TEXT NOT NULL,
       title TEXT NOT NULL,
       summary TEXT DEFAULT '',
+      ai_summary TEXT DEFAULT '',
       source TEXT DEFAULT '',
       link TEXT DEFAULT '',
       published_at TEXT DEFAULT '',
@@ -117,6 +118,15 @@ function initDb() {
   seed()
   cleanDemoData()
   ensureUid()
+  ensureHotColumns()
+}
+
+// 确保 hot_topics.ai_summary 列存在（老库自动补）
+function ensureHotColumns() {
+  const cols = db.prepare('PRAGMA table_info(hot_topics)').all()
+  if (!cols.some((c) => c.name === 'ai_summary')) {
+    db.exec("ALTER TABLE hot_topics ADD COLUMN ai_summary TEXT DEFAULT ''")
+  }
 }
 
 // 确保 users.uid 列存在，并给没有 UID 的用户补齐（100000 + 用户 id）

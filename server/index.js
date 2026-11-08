@@ -582,6 +582,28 @@ app.get('/api/hot/:id', (req, res) => {
   res.json(item)
 })
 
+// 用 AI 把单条资讯归纳总结成一段话（首次生成后缓存）
+app.post('/api/hot/:id/summarize', async (req, res) => {
+  const item = db.prepare('SELECT * FROM hot_topics WHERE id = ?').get(Number(req.params.id))
+  if (!item) return res.status(404).json({ error: '热点不存在' })
+  if (item.ai_summary) return res.json({ ai_summary: item.ai_summary })
+  const text = `标题：${item.title}\n来源：${item.source || '未知'}\n原始内容：${item.summary || '（无）'}`
+  try {
+    const s = await callAI([
+      {
+        role: 'system',
+        content: '你是论坛资讯编辑。请把下面这条资讯用 80~120 字归纳总结成一段通顺的话，突出核心信息与看点。只依据给定内容，不要编造，直接输出一段话，不要列点、不要标题。',
+      },
+      { role: 'user', content: text },
+    ])
+    const ai_summary = (s || '').trim()
+    if (ai_summary) db.prepare('UPDATE hot_topics SET ai_summary = ? WHERE id = ?').run(ai_summary, item.id)
+    res.json({ ai_summary })
+  } catch (e) {
+    res.status(500).json({ error: 'AI 总结失败：' + e.message })
+  }
+})
+
 // ===== 文件上传（图片 / 视频 / 头像） =====
 const upload = multer({
   storage: multer.diskStorage({

@@ -1342,6 +1342,22 @@ body::before {
 .hot-no-source { color: var(--text-muted); font-size: 0.85rem; padding: 12px 0; }
 .hot-detail .detail-head { gap: 10px; }
 
+/* ===== 热点详情：AI 归纳总结 ===== */
+.ai-summary-block {
+  padding: 16px 18px; border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.3); border-left: 3px solid var(--cyan);
+  background: rgba(34, 211, 238, 0.06);
+}
+.ai-summary-title { color: var(--cyan-bright); font-size: 0.9rem; margin-bottom: 8px; }
+.ai-summary-block p { color: var(--text); line-height: 1.85; margin: 0; }
+.ai-summary-loading { color: var(--text-muted); }
+.ai-summary-error { color: #fda4af; }
+.ai-summary-tip { color: var(--text-muted); font-size: 0.72rem; margin-top: 10px; }
+.hot-raw { margin-top: 18px; }
+.hot-raw summary { cursor: pointer; color: var(--text-muted); font-size: 0.85rem; }
+.hot-raw summary:hover { color: var(--cyan-bright); }
+.hot-raw p { margin-top: 10px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8; }
+
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }
