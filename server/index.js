@@ -502,6 +502,21 @@ app.get('/api/admin/data-info', auth, adminOnly, (req, res) => {
   })
 })
 
+// ===== 管理员：从备份恢复 =====
+const restoreUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } })
+
+app.post('/api/admin/restore', auth, adminOnly, restoreUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: '没有上传文件' })
+  const head = req.file.buffer.slice(0, 15).toString('utf8')
+  if (head !== 'SQLite format 3') return res.status(400).json({ error: '不是有效的 SQLite 数据库文件' })
+  try {
+    fs.writeFileSync(path.join(path.dirname(dbPath), 'restore-pending.db'), req.file.buffer)
+    res.json({ ok: true, message: '备份已上传，请重新部署（重启服务）以完成恢复' })
+  } catch (e) {
+    res.status(500).json({ error: '保存失败：' + e.message })
+  }
+})
+
 app.get('/api/admin/backup', auth, adminOnly, (req, res) => {
   if (!fs.existsSync(dbPath)) return res.status(404).json({ error: '数据库文件不存在' })
   const d = new Date()

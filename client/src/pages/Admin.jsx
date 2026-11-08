@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser, getToken } from '../utils/api.js'
 import { toastOk, toastErr } from '../utils/toast.js'
@@ -32,6 +32,8 @@ function AdminPanel() {
   const [err, setErr] = useState('')
   const [postQuery, setPostQuery] = useState('')
   const [userQuery, setUserQuery] = useState('')
+  const [restoreMsg, setRestoreMsg] = useState('')
+  const restoreRef = useRef(null)
 
   const { data: stats, reload: reloadStats } = useApi('/admin/stats')
   const { data: announcements, reload: reloadAnn } = useApi('/announcements')
@@ -105,6 +107,28 @@ function AdminPanel() {
       a.remove()
       URL.revokeObjectURL(url)
       toastOk('备份已下载')
+    } catch (ex) {
+      toastErr(ex.message)
+    }
+  }
+
+  async function handleRestore(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setRestoreMsg('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/admin/restore', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + getToken() },
+        body: fd,
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(d.error || '上传失败')
+      toastOk('备份已上传')
+      setRestoreMsg('✅ 备份已上传成功。请到环界云「变更 → 保存」重新部署一次，服务重启时会自动完成恢复。')
     } catch (ex) {
       toastErr(ex.message)
     }
@@ -322,6 +346,15 @@ function AdminPanel() {
                 ))
               )}
             </div>
+            <h4 className="admin-section-title" style={{ marginTop: 26 }}>从备份恢复</h4>
+            <p className="admin-row-sub">
+              上传之前下载的 .db 备份文件。上传后需要在环界云「变更 → 保存」重新部署一次才生效，恢复前会自动备份当前数据。
+            </p>
+            <div className="form-actions" style={{ marginTop: 12 }}>
+              <input ref={restoreRef} type="file" accept=".db" hidden onChange={handleRestore} />
+              <button type="button" className="btn btn-ghost" onClick={() => restoreRef.current?.click()}>📤 上传备份并恢复</button>
+            </div>
+            {restoreMsg && <p className="admin-row-sub" style={{ color: '#86efac', marginTop: 10 }}>{restoreMsg}</p>}
           </div>
         )}
       </div>

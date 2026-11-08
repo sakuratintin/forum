@@ -18,6 +18,24 @@ function resolveDbPath() {
 const dbPath = resolveDbPath()
 console.log('[db] 数据库路径:', dbPath)
 
+// 如果管理员上传了待恢复的备份，启动时先替换数据库（替换前自动备份当前库）
+;(function applyPendingRestore() {
+  try {
+    const pending = path.join(path.dirname(dbPath), 'restore-pending.db')
+    if (!fs.existsSync(pending)) return
+    if (fs.existsSync(dbPath)) {
+      const dir = path.join(path.dirname(dbPath), 'backups')
+      fs.mkdirSync(dir, { recursive: true })
+      fs.copyFileSync(dbPath, path.join(dir, `pre-restore-${Date.now()}.db`))
+    }
+    fs.copyFileSync(pending, dbPath)
+    fs.unlinkSync(pending)
+    console.log('[db] 已应用待恢复的备份')
+  } catch (e) {
+    console.error('[db] 应用恢复失败：', e.message)
+  }
+})()
+
 // 启动前自动备份数据库（保留最近 5 份），防止升级/迁移出问题
 function autoBackup() {
   try {
