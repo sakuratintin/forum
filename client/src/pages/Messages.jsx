@@ -35,7 +35,8 @@ export default function Messages() {
 
   useEffect(() => {
     loadConversations().then((list) => {
-      if (!username && list.length && !active) setActive(list[0].username)
+      const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches
+      if (!username && list.length && !active && !mobile) setActive(list[0].username)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -96,7 +97,7 @@ export default function Messages() {
   return (
     <div className="page">
       <div className="container">
-        <div className="messages">
+        <div className={`messages${active ? ' has-active' : ''}`}>
           <aside className="msg-side">
             <div className="msg-side-head">
               <h2 className="msg-title">私信</h2>
@@ -148,6 +149,7 @@ export default function Messages() {
             ) : (
               <>
                 <div className="msg-chat-head">
+                  <button type="button" className="msg-back" onClick={() => setActive(null)} aria-label="返回列表">←</button>
                   <span className="avatar">{activeConv?.avatar ? <img src={activeConv.avatar} alt="" className="avatar-img" /> : active[0]}</span>
                   <span className="msg-chat-name">{active}</span>
                   <Link to={`/user/${encodeURIComponent(active)}`} className="msg-view-profile">查看主页</Link>

@@ -927,6 +927,18 @@ body::before {
 @media (max-width: 760px) {
   .messages { grid-template-columns: 1fr; }
   .msg-side { max-height: 240px; }
+  /* 手机端单栏：列表和聊天只显示一个 */
+  .messages.has-active .msg-side { display: none; }
+  .messages:not(.has-active) .msg-chat { display: none; }
+  .messages .msg-side { max-height: none; }
+}
+.msg-back { display: none; }
+@media (max-width: 760px) {
+  .msg-back {
+    display: grid; place-items: center; width: 34px; height: 34px;
+    border-radius: 8px; font-size: 1.2rem; color: var(--text);
+    background: rgba(34, 211, 238, 0.08); border: 1px solid var(--line);
+  }
 }
 
 /* ===== 顶部个人主页入口 ===== */
@@ -1559,6 +1571,22 @@ body::before {
 }
 .detail-media .detail-img { cursor: zoom-in; }
 .msg-img-clickable { cursor: zoom-in; }
+
+/* ===== 搜索建议 ===== */
+.search-suggest { margin-top: 22px; }
+.search-suggest-head {
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--text-muted); font-size: 0.84rem; margin-bottom: 10px;
+}
+.search-clear { color: var(--text-muted); font-size: 0.78rem; }
+.search-clear:hover { color: var(--cyan-bright); }
+.search-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.search-chip {
+  padding: 7px 14px; border-radius: 999px; font-size: 0.85rem;
+  border: 1px solid var(--line); color: var(--text-muted);
+  background: rgba(22, 34, 58, 0.45); transition: all 0.2s ease;
+}
+.search-chip:hover { color: var(--cyan-bright); border-color: var(--cyan); box-shadow: var(--glow); }
 
 /* ===== 提醒通知 ===== */
 .nav-bell {
