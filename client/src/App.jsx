@@ -19,6 +19,8 @@ import Search from './pages/Search.jsx'
 import Hot from './pages/Hot.jsx'
 import HotDetail from './pages/HotDetail.jsx'
 import Notifications from './pages/Notifications.jsx'
+import Bookmarks from './pages/Bookmarks.jsx'
+import NotFound from './pages/NotFound.jsx'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -38,6 +40,8 @@ function AnimatedRoutes() {
         <Route path="/hot" element={<Hot />} />
         <Route path="/hot/:id" element={<HotDetail />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/bookmarks" element={<Bookmarks />} />
+        <Route path="*" element={<NotFound />} />
         <Route path="/login" element={<Login />} />
       </Routes>
     </div>

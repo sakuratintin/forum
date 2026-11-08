@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
+import useTitle from '../hooks/useTitle.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import FollowButton from '../components/FollowButton.jsx'
 import SkeletonRows from '../components/Skeleton.jsx'
@@ -25,6 +26,7 @@ export default function PostDetail() {
   const replyRef = useRef(null)
   const user = getAuthUser()
   const navigate = useNavigate()
+  useTitle(post?.title)
 
   if (loading && !post) {
     return <div className="page"><div className="container"><SkeletonRows count={2} /></div></div>
@@ -46,6 +48,16 @@ export default function PostDetail() {
       const r = await api.post(`/posts/${post.id}/like`)
       setData({ ...post, liked: r.liked, like_count: post.like_count + (r.liked ? 1 : -1) })
     } catch { /* ignore */ }
+  }
+
+  async function handleBookmark() {
+    try {
+      const r = await api.post(`/posts/${post.id}/bookmark`)
+      setData({ ...post, bookmarked: r.bookmarked })
+      toastOk(r.bookmarked ? '已收藏' : '已取消收藏')
+    } catch (ex) {
+      toastErr(ex.message)
+    }
   }
 
   async function handleReply(e) {
@@ -168,6 +180,9 @@ export default function PostDetail() {
               <span>{post.like_count}</span>
             </button>
             <button type="button" className="action-btn" onClick={() => replyRef.current?.focus()}>💬 {post.reply_count}</button>
+            <button type="button" className={`action-btn${post.bookmarked ? ' bookmarked' : ''}`} onClick={handleBookmark}>
+              {post.bookmarked ? '🔖 已收藏' : '🔖 收藏'}
+            </button>
             <button type="button" className="action-btn" onClick={handleTranslate} disabled={translating}>
               {translating ? '翻译中…' : '🌐 翻译'}
             </button>

@@ -107,6 +107,7 @@ function serializePost(p, userId) {
   const replyCount = db.prepare('SELECT COUNT(*) c FROM replies WHERE post_id = ?').get(p.id).c
   const lastReply = db.prepare('SELECT MAX(created_at) AS t FROM replies WHERE post_id = ?').get(p.id)
   const liked = userId ? !!db.prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?').get(p.id, userId) : false
+  const bookmarked = userId ? !!db.prepare('SELECT id FROM bookmarks WHERE user_id = ? AND post_id = ?').get(userId, p.id) : false
   let media = []
   try { media = JSON.parse(p.media || '[]') } catch { media = [] }
   return {
@@ -124,6 +125,7 @@ function serializePost(p, userId) {
     like_count: likeCount,
     reply_count: replyCount,
     liked,
+    bookmarked,
   }
 }
 
@@ -256,11 +258,12 @@ app.delete('/api/posts/:id', auth, (req, res) => {
   db.prepare('DELETE FROM posts WHERE id = ?').run(p.id)
   db.prepare('DELETE FROM replies WHERE post_id = ?').run(p.id)
   db.prepare('DELETE FROM likes WHERE post_id = ?').run(p.id)
+  db.prepare('DELETE FROM bookmarks WHERE post_id = ?').run(p.id)
   res.json({ ok: true })
 })
 
 app.post('/api/posts/:id/like', auth, (req, res) => {
-  const p = db.prepare('SELECT id FROM posts WHERE id = ?').get(Number(req.params.id))
+  const p = db.prepare('SELECT id, author_id FROM posts WHERE id = ?').get(Number(req.params.id))
   if (!p) return res.status(404).json({ error: '帖子不存在' })
   const existing = db.prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?').get(p.id, req.user.id)
   if (existing) {
@@ -268,8 +271,33 @@ app.post('/api/posts/:id/like', auth, (req, res) => {
     res.json({ liked: false })
   } else {
     db.prepare('INSERT INTO likes (post_id, user_id) VALUES (?,?)').run(p.id, req.user.id)
+    if (p.author_id && p.author_id !== req.user.id) {
+      db.prepare('INSERT INTO notifications (user_id, actor_id, type, post_id, snippet) VALUES (?,?,?,?,?)')
+        .run(p.author_id, req.user.id, 'like', p.id, '')
+    }
     res.json({ liked: true })
   }
+})
+
+app.post('/api/posts/:id/bookmark', auth, (req, res) => {
+  const p = db.prepare('SELECT id FROM posts WHERE id = ?').get(Number(req.params.id))
+  if (!p) return res.status(404).json({ error: '帖子不存在' })
+  const existing = db.prepare('SELECT id FROM bookmarks WHERE post_id = ? AND user_id = ?').get(p.id, req.user.id)
+  if (existing) {
+    db.prepare('DELETE FROM bookmarks WHERE id = ?').run(existing.id)
+    res.json({ bookmarked: false })
+  } else {
+    db.prepare('INSERT INTO bookmarks (post_id, user_id) VALUES (?,?)').run(p.id, req.user.id)
+    res.json({ bookmarked: true })
+  }
+})
+
+app.get('/api/bookmarks', auth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT p.* FROM bookmarks b JOIN posts p ON p.id = b.post_id
+    WHERE b.user_id = ? ORDER BY b.id DESC LIMIT 100
+  `).all(req.user.id)
+  res.json(rows.map((p) => serializePost(p, req.user.id)))
 })
 
 // ===== 置顶（仅管理员） =====

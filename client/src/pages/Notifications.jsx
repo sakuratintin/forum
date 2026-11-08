@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, getAuthUser } from '../utils/api.js'
 import SkeletonRows from '../components/Skeleton.jsx'
 
-const TYPE_LABEL = { mention: '@ 提到了你', reply: '回复了你的帖子' }
+const TYPE_LABEL = { mention: '@ 提到了你', reply: '回复了你的帖子', like: '赞了你的帖子' }
 
 export default function Notifications() {
   const user = getAuthUser()

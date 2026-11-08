@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
+import useTitle from '../hooks/useTitle.js'
 import PostRow from '../components/PostRow.jsx'
 import SkeletonRows from '../components/Skeleton.jsx'
 
@@ -26,6 +27,7 @@ export default function PostList() {
     ? `/posts?sort=${sort}&page=${page}&pageSize=${PAGE_SIZE}`
     : `/posts?section=${encodeURIComponent(slug)}&sort=${sort}&page=${page}&pageSize=${PAGE_SIZE}`
   const { data: listData, loading: pLoading } = useApi(path)
+  useTitle(section?.name)
 
   if (!isAll && sLoading) {
     return <div className="page"><div className="container post-empty">加载中…</div></div>

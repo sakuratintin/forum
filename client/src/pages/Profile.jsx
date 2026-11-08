@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
+import useTitle from '../hooks/useTitle.js'
 import EditProfileModal from '../components/EditProfileModal.jsx'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import UserListModal from '../components/UserListModal.jsx'
@@ -17,6 +18,7 @@ export default function Profile() {
   const [listType, setListType] = useState(null)
   const me = getAuthUser()
   const isSelf = me?.username === username
+  useTitle(user?.username)
 
   if (loading && !user) {
     return <div className="page"><div className="container"><SkeletonRows count={2} /></div></div>
@@ -71,7 +73,10 @@ export default function Profile() {
             </div>
             <div className="profile-actions">
               {isSelf ? (
-                <button type="button" className="btn btn-ghost" onClick={() => setEditing(true)}>编辑资料</button>
+                <>
+                  <Link to="/bookmarks" className="btn btn-ghost">我的收藏</Link>
+                  <button type="button" className="btn btn-ghost" onClick={() => setEditing(true)}>编辑资料</button>
+                </>
               ) : (
                 <>
                   <button type="button" className={`btn ${user.is_following ? 'btn-ghost' : 'btn-primary'}`} onClick={handleFollow}>

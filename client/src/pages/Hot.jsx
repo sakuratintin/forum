@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, getAuthUser } from '../utils/api.js'
+import useTitle from '../hooks/useTitle.js'
 import { SkeletonCards } from '../components/Skeleton.jsx'
 import { toastOk, toastErr } from '../utils/toast.js'
 
@@ -35,6 +36,7 @@ export default function Hot() {
   const [msg, setMsg] = useState('')
   const user = getAuthUser()
   const isAdmin = user?.role === 'admin'
+  useTitle('热点资讯')
 
   async function load() {
     setLoading(true)

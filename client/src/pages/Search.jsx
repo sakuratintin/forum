@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
+import useTitle from '../hooks/useTitle.js'
 import FollowButton from '../components/FollowButton.jsx'
 import PostRow from '../components/PostRow.jsx'
 import SkeletonRows from '../components/Skeleton.jsx'
@@ -11,6 +12,7 @@ export default function Search() {
   const [input, setInput] = useState(q)
   const [tab, setTab] = useState('posts')
   const navigate = useNavigate()
+  useTitle('搜索')
 
   const { data: postData, loading: postLoading } = useApi(`/posts?q=${encodeURIComponent(q)}&pageSize=50`)
   const { data: userData, loading: userLoading } = useApi(`/users?q=${encodeURIComponent(q)}`)
