@@ -36,6 +36,7 @@ export default function PostRow({ p, delay = 0, showSection = false }) {
         </div>
       </div>
       <div className="post-stats">
+        <span className="post-stat">👁 {p.views || 0}</span>
         <span className="post-stat">💬 {p.reply_count}</span>
         <span className="post-stat">{p.liked ? '❤️' : '👍'} {p.like_count}</span>
       </div>

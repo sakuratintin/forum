@@ -1306,6 +1306,7 @@ body::before {
 .action-pin { color: var(--cyan-bright) !important; border-color: var(--line-strong) !important; }
 .action-pin:hover { background: rgba(34, 211, 238, 0.1); }
 .action-btn.bookmarked { color: #fbbf24 !important; border-color: rgba(251, 191, 36, 0.5) !important; background: rgba(251, 191, 36, 0.08); }
+.action-hot { color: #fb923c !important; border-color: rgba(251, 146, 60, 0.5) !important; background: rgba(251, 146, 60, 0.08); }
 
 /* ===== 按下反馈 ===== */
 .nav-link:active, .board-tab:active, .board-switch:active, .user-card:active,

@@ -120,8 +120,28 @@ export default function PostDetail() {
     try {
       const r = await api.post(`/posts/${post.id}/pin`)
       setData({ ...post, pinned: r.pinned })
+      toastOk(r.pinned ? '已置顶' : '已取消置顶')
     } catch (ex) {
-      setReplyErr(ex.message)
+      toastErr(ex.message)
+    }
+  }
+
+  async function handleHot() {
+    try {
+      const r = await api.post(`/posts/${post.id}/hot`)
+      setData({ ...post, hot: r.hot })
+      toastOk(r.hot ? '已标记为热门' : '已取消热门')
+    } catch (ex) {
+      toastErr(ex.message)
+    }
+  }
+
+  function handleShare() {
+    const url = window.location.href
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => toastOk('链接已复制')).catch(() => toastErr('复制失败'))
+    } else {
+      window.prompt('复制下面的链接：', url)
     }
   }
 
@@ -155,6 +175,8 @@ export default function PostDetail() {
               <span>{post.created_at}</span>
               <span>·</span>
               <span>{post.section}</span>
+              <span>·</span>
+              <span>👁 {post.views || 0}</span>
             </div>
           </header>
 
@@ -196,6 +218,12 @@ export default function PostDetail() {
             )}
             {canDelete && (
               <button type="button" className="action-btn action-danger" onClick={() => setShowDelete(true)}>🗑 删除</button>
+            )}
+            <button type="button" className="action-btn" onClick={handleShare}>🔗 分享</button>
+            {isAdmin && (
+              <button type="button" className={`action-btn${post.hot ? ' action-hot' : ''}`} onClick={handleHot}>
+                {post.hot ? '🔥 取消热门' : '🔥 标记热门'}
+              </button>
             )}
             {isAdmin && (
               <button type="button" className="action-btn action-pin" onClick={handlePin}>

@@ -117,6 +117,7 @@ function serializePost(p, userId) {
     media,
     pinned: !!p.pinned,
     hot: !!p.hot,
+    views: p.views || 0,
     created_at: p.created_at,
     last_reply_at: lastReply ? lastReply.t : null,
     author: author ? { ...author, is_following: authorFollowing } : null,
@@ -204,6 +205,8 @@ app.get('/api/posts', optionalAuth, (req, res) => {
 app.get('/api/posts/:id', optionalAuth, (req, res) => {
   const p = db.prepare('SELECT * FROM posts WHERE id = ?').get(Number(req.params.id))
   if (!p) return res.status(404).json({ error: '帖子不存在' })
+  db.prepare('UPDATE posts SET views = views + 1 WHERE id = ?').run(p.id)
+  p.views = (p.views || 0) + 1
   const replies = db.prepare('SELECT * FROM replies WHERE post_id = ? ORDER BY floor ASC').all(p.id).map((r) => {
     const author = db.prepare('SELECT id, username, avatar, role FROM users WHERE id = ?').get(r.author_id)
     return {
@@ -309,6 +312,17 @@ app.post('/api/posts/:id/pin', auth, (req, res) => {
   const next = p.pinned ? 0 : 1
   db.prepare('UPDATE posts SET pinned = ? WHERE id = ?').run(next, p.id)
   res.json({ pinned: !!next })
+})
+
+// ===== 标记热门（仅管理员） =====
+app.post('/api/posts/:id/hot', auth, (req, res) => {
+  const me = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id)
+  if (!me || me.role !== 'admin') return res.status(403).json({ error: '只有管理员可以标记热门' })
+  const p = db.prepare('SELECT id, hot FROM posts WHERE id = ?').get(Number(req.params.id))
+  if (!p) return res.status(404).json({ error: '帖子不存在' })
+  const next = p.hot ? 0 : 1
+  db.prepare('UPDATE posts SET hot = ? WHERE id = ?').run(next, p.id)
+  res.json({ hot: !!next })
 })
 
 // ===== 回复 =====

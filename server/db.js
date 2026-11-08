@@ -121,6 +121,7 @@ function initDb() {
       media TEXT DEFAULT '[]',
       pinned INTEGER DEFAULT 0,
       hot INTEGER DEFAULT 0,
+      views INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now','localtime'))
     );
     CREATE TABLE IF NOT EXISTS replies (
@@ -202,6 +203,15 @@ function initDb() {
   ensureUid()
   ensureHotColumns()
   upgradeHotSummaries()
+  ensurePostColumns()
+}
+
+// 确保 posts.views 列存在（老库自动补）
+function ensurePostColumns() {
+  const cols = db.prepare('PRAGMA table_info(posts)').all()
+  if (!cols.some((c) => c.name === 'views')) {
+    db.exec('ALTER TABLE posts ADD COLUMN views INTEGER DEFAULT 0')
+  }
 }
 
 // 升级 AI 总结版本：清空旧的短总结，下次访问时按新提示词重新生成
