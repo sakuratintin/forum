@@ -25,6 +25,7 @@ const SECTIONS = [
   { slug: 'life', name: '学习生活', icon: '活', description: '校园日常、宿舍、食堂等生活话题。' },
   { slug: 'club', name: '社团活动', icon: '社', description: '社团招新、活动组织与报名。' },
   { slug: 'market', name: '二手集市', icon: '集', description: '闲置物品转让、求购与交换。' },
+  { slug: 'game', name: '游戏讨论', icon: '游', description: '游戏攻略、组队开黑、新游测评。' },
 ]
 
 function initDb() {
@@ -102,10 +103,8 @@ function initDb() {
 }
 
 function seed() {
-  if (db.prepare('SELECT COUNT(*) c FROM sections').get().c === 0) {
-    const ins = db.prepare('INSERT INTO sections (slug, name, icon, description) VALUES (?,?,?,?)')
-    for (const s of SECTIONS) ins.run(s.slug, s.name, s.icon, s.description)
-  }
+  const insSec = db.prepare('INSERT OR IGNORE INTO sections (slug, name, icon, description) VALUES (?,?,?,?)')
+  for (const s of SECTIONS) insSec.run(s.slug, s.name, s.icon, s.description)
 
   if (db.prepare('SELECT COUNT(*) c FROM users').get().c === 0) {
     db.prepare('INSERT INTO users (username, password, bio, role) VALUES (?,?,?,?)')

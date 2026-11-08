@@ -58,6 +58,7 @@ export default function Navbar() {
               板块 <span className="nav-caret">▾</span>
             </button>
             <div className={`nav-dropdown-menu${boardOpen ? ' open' : ''}`}>
+              <Link to="/section/all" className="nav-dropdown-item" onClick={() => { setBoardOpen(false); setOpen(false) }}>全部帖子</Link>
               {sections.map((s) => (
                 <Link key={s.slug} to={`/section/${s.slug}`} className="nav-dropdown-item" onClick={() => { setBoardOpen(false); setOpen(false) }}>
                   {s.name}

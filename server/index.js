@@ -219,6 +219,17 @@ app.post('/api/posts/:id/like', auth, (req, res) => {
   }
 })
 
+// ===== 置顶（仅管理员） =====
+app.post('/api/posts/:id/pin', auth, (req, res) => {
+  const me = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id)
+  if (!me || me.role !== 'admin') return res.status(403).json({ error: '只有管理员可以置顶帖子' })
+  const p = db.prepare('SELECT id, pinned FROM posts WHERE id = ?').get(Number(req.params.id))
+  if (!p) return res.status(404).json({ error: '帖子不存在' })
+  const next = p.pinned ? 0 : 1
+  db.prepare('UPDATE posts SET pinned = ? WHERE id = ?').run(next, p.id)
+  res.json({ pinned: !!next })
+})
+
 // ===== 回复 =====
 app.post('/api/posts/:id/replies', auth, async (req, res) => {
   const p = db.prepare('SELECT id FROM posts WHERE id = ?').get(Number(req.params.id))

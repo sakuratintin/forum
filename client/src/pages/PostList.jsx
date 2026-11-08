@@ -15,12 +15,18 @@ export default function PostList() {
   const [page, setPage] = useState(1)
 
   const { data: sections, loading: sLoading } = useApi('/sections')
-  const section = (sections || []).find((s) => s.slug === slug)
+  const secs = sections || []
+  const isAll = slug === 'all'
+  const section = isAll
+    ? { slug: 'all', name: '全部帖子', description: '所有板块的最新讨论，一页看全站', icon: '综' }
+    : secs.find((s) => s.slug === slug)
 
-  const path = `/posts?section=${slug}&sort=${sort}&page=${page}&pageSize=${PAGE_SIZE}`
+  const path = isAll
+    ? `/posts?sort=${sort}&page=${page}&pageSize=${PAGE_SIZE}`
+    : `/posts?section=${encodeURIComponent(slug)}&sort=${sort}&page=${page}&pageSize=${PAGE_SIZE}`
   const { data: listData, loading: pLoading } = useApi(path)
 
-  if (sLoading) {
+  if (!isAll && sLoading) {
     return <div className="page"><div className="container post-empty">加载中…</div></div>
   }
   if (!section) {
@@ -34,6 +40,13 @@ export default function PostList() {
   return (
     <div className="page">
       <div className="container">
+        <div className="board-switcher">
+          <Link to="/section/all" className={`board-switch${isAll ? ' active' : ''}`}>全部</Link>
+          {secs.map((s) => (
+            <Link key={s.slug} to={`/section/${s.slug}`} className={`board-switch${s.slug === slug ? ' active' : ''}`}>{s.name}</Link>
+          ))}
+        </div>
+
         <div className="board-head">
           <div className="board-head-main">
             <span className="section-card-icon board-icon">{section.icon || section.name[0]}</span>
@@ -42,7 +55,7 @@ export default function PostList() {
               <p className="board-desc">{section.description}</p>
             </div>
           </div>
-          <Link to={`/new?section=${slug}`} className="btn btn-primary">＋ 发帖</Link>
+          <Link to={`/new${isAll ? '' : `?section=${slug}`}`} className="btn btn-primary">＋ 发帖</Link>
         </div>
 
         <div className="board-toolbar">
@@ -64,11 +77,11 @@ export default function PostList() {
         {pLoading ? (
           <div className="post-empty">加载中…</div>
         ) : posts.length === 0 ? (
-          <div className="post-empty">该分类下暂无帖子</div>
+          <div className="post-empty">该板块下暂无帖子</div>
         ) : (
           <div className="post-list">
             {posts.map((p, i) => (
-              <PostRow key={p.id} p={p} delay={i * 40} />
+              <PostRow key={p.id} p={p} delay={i * 40} showSection={isAll} />
             ))}
           </div>
         )}
@@ -77,7 +90,7 @@ export default function PostList() {
           <div className="pagination">
             <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一页</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <button key={n} type="button" className={n === page ? 'active' : ''} onClick={() => setPage(n)}>{n}</button>
+              <button key={n} type="button" className={n === page ? ' active' : ''} onClick={() => setPage(n)}>{n}</button>
             ))}
             <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>下一页</button>
           </div>

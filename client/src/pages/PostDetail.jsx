@@ -36,6 +36,7 @@ export default function PostDetail() {
   const sectionSlug = (sections || []).find((s) => s.name === post.section)?.slug
   const mutedMe = !!user?.muted
   const canDelete = !!user && (post.author?.id === user.id || user.role === 'admin')
+  const isAdmin = user?.role === 'admin'
 
   async function handleLike() {
     try {
@@ -91,6 +92,15 @@ export default function PostDetail() {
       setReplyErr(ex.message)
       setShowDelete(false)
       setDeleting(false)
+    }
+  }
+
+  async function handlePin() {
+    try {
+      const r = await api.post(`/posts/${post.id}/pin`)
+      setData({ ...post, pinned: r.pinned })
+    } catch (ex) {
+      setReplyErr(ex.message)
     }
   }
 
@@ -156,6 +166,11 @@ export default function PostDetail() {
             </button>
             {canDelete && (
               <button type="button" className="action-btn action-danger" onClick={() => setShowDelete(true)}>🗑 删除</button>
+            )}
+            {isAdmin && (
+              <button type="button" className="action-btn action-pin" onClick={handlePin}>
+                {post.pinned ? '📌 取消置顶' : '📌 置顶'}
+              </button>
             )}
           </footer>
         </article>
