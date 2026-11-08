@@ -111,6 +111,12 @@ function seed() {
     db.prepare('INSERT INTO users (username, password, bio, role) VALUES (?,?,?,?)')
       .run('管理员', bcrypt.hashSync('admin123', 10), '论坛管理员，负责站务与维护。', 'admin')
   }
+
+  // AI 助手账号 EVA（用于帖子里 @EVA 调用 AI）
+  if (!db.prepare('SELECT id FROM users WHERE username = ?').get('EVA')) {
+    db.prepare('INSERT INTO users (username, password, bio, role) VALUES (?,?,?,?)')
+      .run('EVA', bcrypt.hashSync(`__eva_${Math.random()}_${Date.now()}__`, 10), 'AI 助手，在帖子里 @EVA 就能向我提问', 'ai')
+  }
 }
 
 // 一次性清理旧的演示数据：清空所有帖子/回复/点赞/关注/私信，只保留管理员账号
@@ -125,7 +131,7 @@ function cleanDemoData() {
   db.prepare('DELETE FROM posts').run()
   db.prepare('DELETE FROM follows').run()
   db.prepare('DELETE FROM messages').run()
-  db.prepare("DELETE FROM users WHERE role <> 'admin'").run()
+  db.prepare("DELETE FROM users WHERE role <> 'admin' AND role <> 'ai'").run()
 
   db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('demo_cleaned', '1')").run()
   if (postCount || userCount > 1) {

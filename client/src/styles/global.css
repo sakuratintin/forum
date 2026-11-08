@@ -1203,6 +1203,25 @@ body::before {
 .post-section { color: var(--cyan-bright); }
 .home-recent { padding: 8px 0 20px; }
 
+/* ===== EVA AI 回复 ===== */
+.reply-item.ai {
+  border-left: 3px solid var(--cyan);
+  background: rgba(34, 211, 238, 0.06);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.08);
+}
+.ai-badge {
+  display: inline-block; padding: 1px 7px; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 600; color: #041018;
+  background: var(--cyan-bright); vertical-align: middle;
+}
+.reply-eva-btn {
+  padding: 6px 12px; border-radius: 8px; font-size: 0.82rem;
+  color: var(--cyan-bright); border: 1px solid var(--line-strong);
+  background: rgba(34, 211, 238, 0.06); transition: all 0.2s ease;
+}
+.reply-eva-btn:hover:not(:disabled) { border-color: var(--cyan); background: rgba(34, 211, 238, 0.14); }
+.reply-eva-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }

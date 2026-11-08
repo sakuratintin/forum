@@ -169,13 +169,17 @@ app.get('/api/posts', optionalAuth, (req, res) => {
 app.get('/api/posts/:id', optionalAuth, (req, res) => {
   const p = db.prepare('SELECT * FROM posts WHERE id = ?').get(Number(req.params.id))
   if (!p) return res.status(404).json({ error: '帖子不存在' })
-  const replies = db.prepare('SELECT * FROM replies WHERE post_id = ? ORDER BY floor ASC').all(p.id).map((r) => ({
-    id: r.id,
-    floor: r.floor,
-    content: r.content,
-    created_at: r.created_at,
-    author: db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(r.author_id),
-  }))
+  const replies = db.prepare('SELECT * FROM replies WHERE post_id = ? ORDER BY floor ASC').all(p.id).map((r) => {
+    const author = db.prepare('SELECT id, username, avatar, role FROM users WHERE id = ?').get(r.author_id)
+    return {
+      id: r.id,
+      floor: r.floor,
+      content: r.content,
+      created_at: r.created_at,
+      author: author ? { id: author.id, username: author.username, avatar: author.avatar } : null,
+      is_ai: author?.role === 'ai',
+    }
+  })
   res.json({ ...serializePost(p, req.user?.id), replies })
 })
 
@@ -216,7 +220,7 @@ app.post('/api/posts/:id/like', auth, (req, res) => {
 })
 
 // ===== 回复 =====
-app.post('/api/posts/:id/replies', auth, (req, res) => {
+app.post('/api/posts/:id/replies', auth, async (req, res) => {
   const p = db.prepare('SELECT id FROM posts WHERE id = ?').get(Number(req.params.id))
   if (!p) return res.status(404).json({ error: '帖子不存在' })
   const me = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id)
@@ -226,21 +230,59 @@ app.post('/api/posts/:id/replies', auth, (req, res) => {
   const floor = db.prepare('SELECT COUNT(*) c FROM replies WHERE post_id = ?').get(p.id).c + 1
   const info = db.prepare('INSERT INTO replies (post_id, author_id, content, floor) VALUES (?,?,?,?)').run(p.id, req.user.id, content.trim(), floor)
   const r = db.prepare('SELECT * FROM replies WHERE id = ?').get(Number(info.lastInsertRowid))
-  res.json({
+  const myReply = {
     id: r.id,
     floor: r.floor,
     content: r.content,
     created_at: r.created_at,
     author: db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(req.user.id),
-  })
+  }
+
+  // 回复里 @EVA 时，让 AI 读取帖子与评论后作答
+  const aiReply = await maybeEvaReply(p.id, content.trim())
+  res.json({ ...myReply, aiReply })
 })
+
+async function maybeEvaReply(postId, content) {
+  if (!/@EVA/i.test(content)) return null
+  const eva = db.prepare("SELECT id FROM users WHERE username = 'EVA'").get()
+  if (!eva) return null
+  const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(postId)
+  if (!post) return null
+  const recent = db.prepare('SELECT content FROM replies WHERE post_id = ? ORDER BY id ASC').all(postId).slice(-15)
+  const question = content.replace(/@EVA/gi, '').trim() || '请阅读这个帖子和大家的讨论，给出你的看法。'
+  const messages = [
+    { role: 'system', content: '你是论坛 H.C.T. Forum 的 AI 助手 EVA。请阅读帖子正文和已有回复，用简洁、友好的中文回答用户的提问（200 字以内），直接给出答案，不要多余解释。' },
+    {
+      role: 'user',
+      content: `帖子标题：${post.title}\n帖子正文：${post.content || '（无正文）'}\n\n已有回复：\n${recent.map((x) => '- ' + x.content).join('\n') || '（暂无）'}\n\n用户提问：${question}`,
+    },
+  ]
+  try {
+    const answer = (await callAI(messages)).trim()
+    if (!answer) return null
+    const floor = db.prepare('SELECT COUNT(*) c FROM replies WHERE post_id = ?').get(postId).c + 1
+    const info = db.prepare('INSERT INTO replies (post_id, author_id, content, floor) VALUES (?,?,?,?)').run(postId, eva.id, answer, floor)
+    const rr = db.prepare('SELECT * FROM replies WHERE id = ?').get(Number(info.lastInsertRowid))
+    return {
+      id: rr.id,
+      floor: rr.floor,
+      content: rr.content,
+      created_at: rr.created_at,
+      author: db.prepare('SELECT id, username, avatar FROM users WHERE id = ?').get(eva.id),
+      is_ai: true,
+    }
+  } catch (e) {
+    return { error: 'AI 回复失败：' + e.message }
+  }
+}
 
 // ===== 用户 =====
 app.get('/api/users', optionalAuth, (req, res) => {
   const q = (req.query.q || '').trim()
   const rows = q
-    ? db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE username LIKE ? ORDER BY id ASC LIMIT 50').all(`%${q}%`)
-    : db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC LIMIT 50').all()
+    ? db.prepare("SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE role <> 'ai' AND username LIKE ? ORDER BY id ASC LIMIT 50").all(`%${q}%`)
+    : db.prepare("SELECT id, username, bio, avatar, role, muted, created_at FROM users WHERE role <> 'ai' ORDER BY id ASC LIMIT 50").all()
   res.json(listWithFollow(req, rows))
 })
 
@@ -401,25 +443,27 @@ app.get('/api/admin/users', auth, adminOnly, (req, res) => {
 })
 
 // ===== AI 助手（智谱 GLM） =====
+async function callAI(messages) {
+  if (!AI_KEY) throw new Error('AI 未配置，请设置环境变量 AI_API_KEY')
+  const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_KEY },
+    body: JSON.stringify({ model: 'glm-4-flash', messages }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error((data && data.error && data.error.message) || 'AI 调用失败')
+  return (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || ''
+}
+
 app.post('/api/ai/chat', async (req, res) => {
   const { messages, system } = req.body || {}
   if (!AI_KEY) return res.status(503).json({ error: 'AI 未配置，请设置环境变量 AI_API_KEY' })
   if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ error: '消息不能为空' })
-  const payload = {
-    model: 'glm-4-flash',
-    messages: system ? [{ role: 'system', content: system }, ...messages] : messages,
-  }
   try {
-    const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_KEY },
-      body: JSON.stringify(payload),
-    })
-    const data = await resp.json()
-    if (!resp.ok) return res.status(resp.status).json({ error: data?.error?.message || 'AI 调用失败' })
-    res.json({ content: data?.choices?.[0]?.message?.content || '' })
+    const content = await callAI(system ? [{ role: 'system', content: system }, ...messages] : messages)
+    res.json({ content })
   } catch (e) {
-    res.status(500).json({ error: 'AI 请求失败：' + e.message })
+    res.status(500).json({ error: e.message })
   }
 })
 

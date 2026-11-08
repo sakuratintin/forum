@@ -51,7 +51,12 @@ export default function PostDetail() {
     setReplyErr('')
     try {
       const r = await api.post(`/posts/${post.id}/replies`, { content: replyText.trim() })
-      setData({ ...post, replies: [...(post.replies || []), r], reply_count: (post.reply_count || 0) + 1 })
+      const myReply = { ...r }
+      delete myReply.aiReply
+      const added = [myReply]
+      if (r.aiReply && r.aiReply.id) added.push(r.aiReply)
+      setData({ ...post, replies: [...(post.replies || []), ...added], reply_count: (post.reply_count || 0) + added.length })
+      if (r.aiReply && r.aiReply.error) setReplyErr(r.aiReply.error)
       setReplyText('')
     } catch (ex) {
       setReplyErr(ex.message)
@@ -159,11 +164,12 @@ export default function PostDetail() {
           <h2 className="replies-title">{post.replies?.length || 0} 条回复</h2>
           <div className="reply-list">
             {(post.replies || []).map((r) => (
-              <div className="reply-item" key={r.id}>
+              <div className={`reply-item${r.is_ai ? ' ai' : ''}`} key={r.id}>
                 <span className="avatar">{r.author?.avatar ? <img src={r.author.avatar} alt="" className="avatar-img" /> : r.author?.username?.[0]}</span>
                 <div className="reply-main">
                   <div className="reply-head">
                     <span className="reply-author">{r.author?.username}</span>
+                    {r.is_ai && <span className="ai-badge">AI</span>}
                     <span className="reply-floor">#{r.floor}</span>
                   </div>
                   <p className="reply-content">{r.content}</p>
@@ -180,13 +186,23 @@ export default function PostDetail() {
               ref={replyRef}
               className="input textarea"
               rows={3}
-              placeholder={mutedMe ? '你已被禁言，暂时无法回复' : '写下你的回复…'}
+              placeholder={mutedMe ? '你已被禁言，暂时无法回复' : '写下你的回复…（输入 @EVA 可让 AI 回答）'}
               value={replyText}
               disabled={mutedMe || submitting}
               onChange={(e) => setReplyText(e.target.value)}
             />
             <div className="form-actions">
-              <button type="submit" className="btn btn-primary" disabled={mutedMe || submitting}>回复</button>
+              <button
+                type="button"
+                className="reply-eva-btn"
+                onClick={() => setReplyText((t) => (t.includes('@EVA') ? t : t ? t + ' @EVA ' : '@EVA '))}
+                disabled={mutedMe || submitting}
+              >
+                @EVA 提问
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={mutedMe || submitting}>
+                {submitting ? (/@EVA/i.test(replyText) ? 'AI 思考中…' : '发送中…') : '回复'}
+              </button>
             </div>
           </form>
         </section>
