@@ -36,6 +36,9 @@ if (isPersisted) {
   console.error('[db] ⚠️ 警告：数据目录未检测到持久卷挂载，重新部署后数据会丢失！请在环界云把存储卷挂载到 /data')
 }
 
+const dbExisted = fs.existsSync(dbPath)
+const dbSizeBefore = dbExisted ? fs.statSync(dbPath).size : 0
+
 // 如果管理员上传了待恢复的备份，启动时先替换数据库（替换前自动备份当前库）
 ;(function applyPendingRestore() {
   try {
@@ -78,6 +81,7 @@ function autoBackup() {
 
 autoBackup()
 const db = new DatabaseSync(dbPath)
+console.log(`[db] 数据库文件：${dbExisted ? `已存在（${(dbSizeBefore / 1024).toFixed(1)} KB）` : '不存在，本次新建（说明之前的数据库没保住）'}`)
 
 const SECTIONS = [
   { slug: 'acg', name: '二次元', icon: '漫', description: '动漫、漫画、游戏等 ACG 内容讨论。' },
