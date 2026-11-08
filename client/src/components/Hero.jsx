@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Emblem from './Emblem.jsx'
 import useCountUp from '../hooks/useCountUp.js'
+import { getAuthUser } from '../utils/api.js'
 
 function Stat({ value, label }) {
   const n = useCountUp(value)
@@ -13,6 +14,7 @@ function Stat({ value, label }) {
 }
 
 export default function Hero({ stats = [] }) {
+  const user = getAuthUser()
   return (
     <section className="hero">
       <div className="container hero-inner">
@@ -28,7 +30,7 @@ export default function Hero({ stats = [] }) {
         </p>
         <div className="hero-cta fade-up d4">
           <Link to="/section/acg" className="btn btn-primary">进入论坛</Link>
-          <Link to="/login" className="btn btn-ghost">立即注册</Link>
+          {!user && <Link to="/login" className="btn btn-ghost">立即注册</Link>}
         </div>
         <div className="hero-stats fade-up d5">
           {stats.map((s) => (
