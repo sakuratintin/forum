@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api, getAuthUser, uploadFile } from '../utils/api.js'
 import { toastErr } from '../utils/toast.js'
+import Lightbox from '../components/Lightbox.jsx'
 
 export default function Messages() {
   const { username } = useParams()
@@ -13,6 +14,7 @@ export default function Messages() {
   const [err, setErr] = useState('')
   const [showMutual, setShowMutual] = useState(false)
   const [mutualList, setMutualList] = useState([])
+  const [lightboxSrc, setLightboxSrc] = useState('')
   const bodyRef = useRef(null)
   const imgRef = useRef(null)
   const user = getAuthUser()
@@ -158,7 +160,14 @@ export default function Messages() {
                     return (
                       <div key={m.id} className={`msg-row ${m.from_me ? 'me' : 'them'}${sameSide ? ' grouped' : ''}`}>
                         <div className="msg-bubble">
-                          {m.image && <img src={m.image} alt="图片" className="msg-img" />}
+                          {m.image && (
+                            <img
+                              src={m.image}
+                              alt="图片"
+                              className="msg-img msg-img-clickable"
+                              onClick={() => setLightboxSrc(m.image)}
+                            />
+                          )}
                           {m.content ? <span>{m.content}</span> : null}
                         </div>
                         {!sameSide && <span className="msg-time">{m.created_at?.slice(11, 16)}</span>}
@@ -185,6 +194,10 @@ export default function Messages() {
           </section>
         </div>
       </div>
+
+      {lightboxSrc && (
+        <Lightbox images={[lightboxSrc]} index={0} onClose={() => setLightboxSrc('')} />
+      )}
     </div>
   )
 }

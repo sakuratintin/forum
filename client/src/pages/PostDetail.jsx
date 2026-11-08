@@ -8,6 +8,7 @@ import FollowButton from '../components/FollowButton.jsx'
 import SkeletonRows from '../components/Skeleton.jsx'
 import ReadingProgress from '../components/ReadingProgress.jsx'
 import PostRow from '../components/PostRow.jsx'
+import Lightbox from '../components/Lightbox.jsx'
 import { toastOk, toastErr } from '../utils/toast.js'
 
 function isVideo(m) {
@@ -26,6 +27,7 @@ export default function PostDetail() {
   const [translating, setTranslating] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [lightbox, setLightbox] = useState(-1)
   const replyRef = useRef(null)
   const user = getAuthUser()
   const navigate = useNavigate()
@@ -46,6 +48,7 @@ export default function PostDetail() {
   const canDelete = !!user && (post.author?.id === user.id || user.role === 'admin')
   const isAdmin = user?.role === 'admin'
   const related = (relatedData?.posts || []).filter((p) => p.id !== post.id).slice(0, 4)
+  const images = (post.media || []).filter((m) => !isVideo(m))
 
   async function handleLike() {
     try {
@@ -188,7 +191,14 @@ export default function PostDetail() {
                   isVideo(m) ? (
                     <video key={i} src={m} controls className="detail-video" />
                   ) : (
-                    <img key={i} src={m} alt={`图片${i + 1}`} loading="lazy" />
+                    <img
+                      key={i}
+                      src={m}
+                      alt={`图片${i + 1}`}
+                      loading="lazy"
+                      className="detail-img"
+                      onClick={() => setLightbox(images.indexOf(m))}
+                    />
                   ),
                 )}
               </div>
@@ -308,6 +318,16 @@ export default function PostDetail() {
         onConfirm={handleDelete}
         onCancel={() => setShowDelete(false)}
       />
+
+      {lightbox >= 0 && images[lightbox] && (
+        <Lightbox
+          images={images}
+          index={lightbox}
+          onClose={() => setLightbox(-1)}
+          onPrev={() => setLightbox((i) => (i - 1 + images.length) % images.length)}
+          onNext={() => setLightbox((i) => (i + 1) % images.length)}
+        />
+      )}
     </div>
   )
 }
