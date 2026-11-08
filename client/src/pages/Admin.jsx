@@ -330,6 +330,14 @@ function AdminPanel() {
                 <span>用户 / 帖子 / 回复</span>
                 <b>{dataInfo ? `${dataInfo.counts.users} / ${dataInfo.counts.posts} / ${dataInfo.counts.replies}` : '—'}</b>
               </div>
+              <div className="data-item">
+                <span>数据体检（孤儿数据）</span>
+                <b style={{ color: dataInfo && (dataInfo.orphans?.posts || dataInfo.orphans?.replies) ? '#fbbf24' : '#4ade80' }}>
+                  {dataInfo
+                    ? `帖子 ${dataInfo.orphans?.posts ?? 0} / 回复 ${dataInfo.orphans?.replies ?? 0}`
+                    : '—'}
+                </b>
+              </div>
             </div>
 
             <div className="form-actions" style={{ marginTop: 18 }}>

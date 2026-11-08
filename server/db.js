@@ -204,6 +204,7 @@ function initDb() {
   ensureHotColumns()
   upgradeHotSummaries()
   ensurePostColumns()
+  repairOrphans()
 }
 
 // 确保 posts.views 列存在（老库自动补）
@@ -257,23 +258,48 @@ function seed() {
   }
 }
 
-// 一次性清理旧的演示数据：清空所有帖子/回复/点赞/关注/私信，只保留管理员账号
+// 一次性清理旧的演示账号：只删除已知的演示账号及其内容，绝不批量删除真实用户/帖子
 function cleanDemoData() {
   if (db.prepare("SELECT value FROM meta WHERE key = 'demo_cleaned'").get()) return
 
-  const postCount = db.prepare('SELECT COUNT(*) c FROM posts').get().c
-  const userCount = db.prepare('SELECT COUNT(*) c FROM users').get().c
+  const DEMO = ['阿泽', '学霸君', '动漫社社长', '小满', 'Kira']
+  const marks = DEMO.map(() => '?').join(',')
+  const ids = db
+    .prepare(`SELECT id FROM users WHERE username IN (${marks}) AND role NOT IN ('admin','ai')`)
+    .all(...DEMO)
+    .map((u) => u.id)
 
-  db.prepare('DELETE FROM likes').run()
-  db.prepare('DELETE FROM replies').run()
-  db.prepare('DELETE FROM posts').run()
-  db.prepare('DELETE FROM follows').run()
-  db.prepare('DELETE FROM messages').run()
-  db.prepare("DELETE FROM users WHERE role <> 'admin' AND role <> 'ai'").run()
+  if (ids.length) {
+    const um = ids.map(() => '?').join(',')
+    const postIds = db.prepare(`SELECT id FROM posts WHERE author_id IN (${um})`).all(...ids).map((p) => p.id)
+    if (postIds.length) {
+      const pm = postIds.map(() => '?').join(',')
+      db.prepare(`DELETE FROM likes WHERE post_id IN (${pm})`).run(...postIds)
+      db.prepare(`DELETE FROM replies WHERE post_id IN (${pm})`).run(...postIds)
+      db.prepare(`DELETE FROM posts WHERE id IN (${pm})`).run(...postIds)
+    }
+    db.prepare(`DELETE FROM likes WHERE user_id IN (${um})`).run(...ids)
+    db.prepare(`DELETE FROM replies WHERE author_id IN (${um})`).run(...ids)
+    db.prepare(`DELETE FROM follows WHERE follower_id IN (${um}) OR following_id IN (${um})`).run(...ids, ...ids)
+    db.prepare(`DELETE FROM messages WHERE from_id IN (${um}) OR to_id IN (${um})`).run(...ids, ...ids)
+    db.prepare(`DELETE FROM users WHERE id IN (${um})`).run(...ids)
+    console.log(`[db] 已清理演示账号 ${ids.length} 个（真实用户和帖子一律保留）`)
+  }
 
   db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('demo_cleaned', '1')").run()
-  if (postCount || userCount > 1) {
-    console.log(`[db] 已清理演示数据：清空帖子 ${postCount} 篇，仅保留管理员账号`)
+}
+
+// 修复孤儿帖子：所属板块不存在时挂到第一个板块，避免帖子「看不到」
+function repairOrphans() {
+  try {
+    const count = db.prepare('SELECT COUNT(*) c FROM posts WHERE section_id NOT IN (SELECT id FROM sections)').get().c
+    if (!count) return
+    const sec = db.prepare('SELECT id FROM sections ORDER BY id ASC LIMIT 1').get()
+    if (!sec) return
+    db.prepare('UPDATE posts SET section_id = ? WHERE section_id NOT IN (SELECT id FROM sections)').run(sec.id)
+    console.log(`[db] 已修复 ${count} 篇「板块不存在」的帖子，归入板块 id=${sec.id}`)
+  } catch (e) {
+    console.error('[db] 修复孤儿帖子失败：', e.message)
   }
 }
 

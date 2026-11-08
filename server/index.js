@@ -195,8 +195,8 @@ app.get('/api/posts', optionalAuth, (req, res) => {
     order = 'ORDER BY p.pinned DESC, (SELECT COUNT(*) FROM likes WHERE post_id = p.id) DESC, p.id DESC'
   }
 
-  const total = db.prepare(`SELECT COUNT(*) c FROM posts p JOIN sections s ON s.id = p.section_id ${where}`).get(...params).c
-  const rows = db.prepare(`SELECT p.* FROM posts p JOIN sections s ON s.id = p.section_id ${where} ${order} LIMIT ? OFFSET ?`)
+  const total = db.prepare(`SELECT COUNT(*) c FROM posts p LEFT JOIN sections s ON s.id = p.section_id ${where}`).get(...params).c
+  const rows = db.prepare(`SELECT p.* FROM posts p LEFT JOIN sections s ON s.id = p.section_id ${where} ${order} LIMIT ? OFFSET ?`)
     .all(...params, size, (pageN - 1) * size)
 
   res.json({ total, page: pageN, pageSize: size, posts: rows.map((p) => serializePost(p, req.user?.id)) })
@@ -631,6 +631,10 @@ app.get('/api/admin/data-info', auth, adminOnly, (req, res) => {
       users: db.prepare('SELECT COUNT(*) c FROM users').get().c,
       posts: db.prepare('SELECT COUNT(*) c FROM posts').get().c,
       replies: db.prepare('SELECT COUNT(*) c FROM replies').get().c,
+    },
+    orphans: {
+      posts: db.prepare('SELECT COUNT(*) c FROM posts WHERE section_id NOT IN (SELECT id FROM sections)').get().c,
+      replies: db.prepare('SELECT COUNT(*) c FROM replies WHERE post_id NOT IN (SELECT id FROM posts)').get().c,
     },
   })
 })
