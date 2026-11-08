@@ -15,6 +15,14 @@ const AI_PROVIDER = process.env.AI_PROVIDER || (DEEPSEEK_KEY ? 'deepseek' : 'zhi
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(path.dirname(process.env.DB_PATH || path.join(__dirname, 'forum.db')), 'uploads')
 fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 
+function getSetting(key, fallback = '') {
+  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key)
+  return row && row.value ? row.value : fallback
+}
+function setSetting(key, value) {
+  db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(key, value)
+}
+
 const app = express()
 app.use(express.json({ limit: '20mb' }))
 app.use('/uploads', express.static(UPLOAD_DIR))
@@ -458,9 +466,31 @@ app.get('/api/admin/users', auth, adminOnly, (req, res) => {
   res.json(db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC').all())
 })
 
+// ===== 管理员：选择 AI 模型 =====
+app.get('/api/admin/ai-model', auth, adminOnly, (req, res) => {
+  res.json({
+    provider: currentAIProvider(),
+    envDefault: AI_PROVIDER,
+    available: { zhipu: !!AI_KEY, deepseek: !!DEEPSEEK_KEY },
+  })
+})
+
+app.put('/api/admin/ai-model', auth, adminOnly, (req, res) => {
+  const { provider } = req.body || {}
+  if (!provider || !['zhipu', 'deepseek'].includes(provider)) return res.status(400).json({ error: '无效的模型选项' })
+  if (provider === 'deepseek' && !DEEPSEEK_KEY) return res.status(400).json({ error: '未配置 DeepSeek Key（DEEPSEEK_API_KEY）' })
+  if (provider === 'zhipu' && !AI_KEY) return res.status(400).json({ error: '未配置智谱 Key（AI_API_KEY）' })
+  setSetting('ai_provider', provider)
+  res.json({ provider })
+})
+
 // ===== AI 助手（可在智谱 / DeepSeek 之间切换） =====
+function currentAIProvider() {
+  return getSetting('ai_provider', AI_PROVIDER)
+}
+
 function chatConfigured() {
-  return AI_PROVIDER === 'deepseek' ? !!DEEPSEEK_KEY : !!AI_KEY
+  return currentAIProvider() === 'deepseek' ? !!DEEPSEEK_KEY : !!AI_KEY
 }
 
 async function callZhipu(messages) {
@@ -488,7 +518,7 @@ async function callDeepSeek(messages) {
 }
 
 async function callAI(messages) {
-  return AI_PROVIDER === 'deepseek' ? callDeepSeek(messages) : callZhipu(messages)
+  return currentAIProvider() === 'deepseek' ? callDeepSeek(messages) : callZhipu(messages)
 }
 
 app.post('/api/ai/chat', async (req, res) => {

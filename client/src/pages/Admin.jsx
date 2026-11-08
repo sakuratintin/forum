@@ -29,6 +29,7 @@ function AdminPanel() {
   const { data: announcements, reload: reloadAnn } = useApi('/announcements')
   const { data: postData, reload: reloadPosts } = useApi('/posts?pageSize=100')
   const { data: userList, reload: reloadUsers } = useApi('/admin/users')
+  const { data: aiModel, reload: reloadAI } = useApi('/admin/ai-model')
 
   const allPosts = postData?.posts || []
   const pq = postQuery.trim().toLowerCase()
@@ -64,10 +65,21 @@ function AdminPanel() {
     reloadUsers()
   }
 
+  async function handleSetModel(provider) {
+    setErr('')
+    try {
+      await api.put('/admin/ai-model', { provider })
+      reloadAI()
+    } catch (ex) {
+      setErr(ex.message)
+    }
+  }
+
   const TABS = [
     { key: 'announce', label: '发布通告' },
     { key: 'posts', label: '帖子管理' },
     { key: 'users', label: '用户管理' },
+    { key: 'ai', label: 'AI 模型' },
   ]
 
   return (
@@ -171,6 +183,65 @@ function AdminPanel() {
                 ))
               )}
             </div>
+          </div>
+        )}
+        {tab === 'ai' && (
+          <div className="form-card admin-card">
+            <h3 className="admin-section-title">AI 模型选择</h3>
+            <p className="admin-row-sub" style={{ marginBottom: 16 }}>
+              切换后，全站 AI（对话 / @EVA 回复 / 热点总结 / 翻译）立即使用所选模型，无需重启。
+            </p>
+            {err && <p className="form-error">{err}</p>}
+            <div className="model-options">
+              <div className={`model-option${aiModel?.provider === 'zhipu' ? ' active' : ''}`}>
+                <div className="model-option-head">
+                  <span className="model-option-name">智谱 GLM-4-Flash</span>
+                  <span className={`model-badge${aiModel?.provider === 'zhipu' ? ' on' : ''}`}>
+                    {aiModel?.provider === 'zhipu' ? '使用中' : '未启用'}
+                  </span>
+                </div>
+                <p className="model-option-desc">免费、中文强、速度快，适合日常对话与总结。</p>
+                <div className="model-option-foot">
+                  <span className={`model-status ${aiModel?.available?.zhipu ? 'ok' : 'no'}`}>
+                    {aiModel?.available?.zhipu ? '✓ 已配置 Key' : '✗ 未配置 Key'}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-xs"
+                    disabled={!aiModel?.available?.zhipu || aiModel?.provider === 'zhipu'}
+                    onClick={() => handleSetModel('zhipu')}
+                  >
+                    {aiModel?.provider === 'zhipu' ? '当前使用' : '切换到此'}
+                  </button>
+                </div>
+              </div>
+
+              <div className={`model-option${aiModel?.provider === 'deepseek' ? ' active' : ''}`}>
+                <div className="model-option-head">
+                  <span className="model-option-name">DeepSeek</span>
+                  <span className={`model-badge${aiModel?.provider === 'deepseek' ? ' on' : ''}`}>
+                    {aiModel?.provider === 'deepseek' ? '使用中' : '未启用'}
+                  </span>
+                </div>
+                <p className="model-option-desc">能力更强、总结更详细、响应更快。按量付费（约 ¥1/百万 Token）。</p>
+                <div className="model-option-foot">
+                  <span className={`model-status ${aiModel?.available?.deepseek ? 'ok' : 'no'}`}>
+                    {aiModel?.available?.deepseek ? '✓ 已配置 Key' : '✗ 未配置 Key'}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-xs"
+                    disabled={!aiModel?.available?.deepseek || aiModel?.provider === 'deepseek'}
+                    onClick={() => handleSetModel('deepseek')}
+                  >
+                    {aiModel?.provider === 'deepseek' ? '当前使用' : '切换到此'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="admin-row-sub" style={{ marginTop: 14 }}>
+              注：语音识别、热点联网搜索固定使用智谱（DeepSeek 不提供这两项能力）。
+            </p>
           </div>
         )}
       </div>

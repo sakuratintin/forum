@@ -1372,6 +1372,30 @@ body::before {
 .hot-raw summary:hover { color: var(--cyan-bright); }
 .hot-raw p { margin-top: 10px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.8; }
 
+/* ===== 管理后台：AI 模型选择 ===== */
+.model-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.model-option {
+  padding: 18px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(10, 15, 26, 0.5); transition: all 0.2s ease;
+}
+.model-option.active { border-color: var(--cyan); box-shadow: var(--glow); background: rgba(34, 211, 238, 0.06); }
+.model-option-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.model-option-name { font-family: var(--font-display); color: var(--cyan-bright); font-size: 1rem; letter-spacing: 0.03em; }
+.model-badge {
+  padding: 2px 9px; border-radius: 999px; font-size: 0.7rem;
+  color: var(--text-muted); border: 1px solid var(--line);
+}
+.model-badge.on { color: #041018; background: var(--cyan-bright); border-color: transparent; }
+.model-option-desc { color: var(--text-muted); font-size: 0.86rem; line-height: 1.7; margin-bottom: 14px; }
+.model-option-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.model-status { font-size: 0.78rem; }
+.model-status.ok { color: #4ade80; }
+.model-status.no { color: #fda4af; }
+
+@media (max-width: 640px) {
+  .model-options { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }
