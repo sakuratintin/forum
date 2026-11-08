@@ -74,6 +74,7 @@ export default function PostList() {
                     {p.title}
                   </h3>
                   <div className="post-meta">
+                    <span className="avatar avatar-xs">{p.author?.avatar ? <img src={p.author.avatar} alt="" className="avatar-img" /> : p.author?.username?.[0]}</span>
                     <span
                       className="post-author author-link"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/user/${encodeURIComponent(p.author?.username)}`) }}

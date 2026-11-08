@@ -234,6 +234,20 @@ app.get('/api/users', optionalAuth, (req, res) => {
   })))
 })
 
+app.get('/api/users/:username/followers', optionalAuth, (req, res) => {
+  const u = db.prepare('SELECT id FROM users WHERE username = ?').get(req.params.username)
+  if (!u) return res.status(404).json({ error: '用户不存在' })
+  const rows = db.prepare('SELECT us.id, us.username, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.follower_id WHERE f.following_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
+  res.json(rows.map((x) => ({ ...publicUser(x), post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(x.id).c })))
+})
+
+app.get('/api/users/:username/following', optionalAuth, (req, res) => {
+  const u = db.prepare('SELECT id FROM users WHERE username = ?').get(req.params.username)
+  if (!u) return res.status(404).json({ error: '用户不存在' })
+  const rows = db.prepare('SELECT us.id, us.username, us.avatar, us.bio, us.role, us.muted, us.created_at FROM follows f JOIN users us ON us.id = f.following_id WHERE f.follower_id = ? ORDER BY f.id DESC LIMIT 100').all(u.id)
+  res.json(rows.map((x) => ({ ...publicUser(x), post_count: db.prepare('SELECT COUNT(*) c FROM posts WHERE author_id = ?').get(x.id).c })))
+})
+
 app.get('/api/users/:username', optionalAuth, (req, res) => {
   const u = db.prepare('SELECT * FROM users WHERE username = ?').get(req.params.username)
   if (!u) return res.status(404).json({ error: '用户不存在' })
@@ -413,12 +427,51 @@ app.post('/api/upload', auth, upload.single('file'), (req, res) => {
   res.json({ url: '/uploads/' + req.file.filename })
 })
 
+// ===== 分片上传（大文件绕过网关请求体限制） =====
+app.post('/api/upload-chunk', auth, upload.single('file'), (req, res) => {
+  const uploadId = String((req.body && req.body.uploadId) || '')
+  if (!uploadId) return res.status(400).json({ error: '缺少 uploadId' })
+  const tmpDir = path.join(UPLOAD_DIR, 'tmp', uploadId)
+  try {
+    fs.mkdirSync(tmpDir, { recursive: true })
+    fs.renameSync(req.file.path, path.join(tmpDir, String(parseInt(req.body.index) || 0)))
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: '分片保存失败：' + e.message })
+  }
+})
+
+app.post('/api/upload-complete', auth, (req, res) => {
+  const uploadId = String((req.body && req.body.uploadId) || '')
+  const filename = String((req.body && req.body.filename) || 'file')
+  const total = parseInt(req.body && req.body.total) || 1
+  if (!uploadId) return res.status(400).json({ error: '缺少 uploadId' })
+  const tmpDir = path.join(UPLOAD_DIR, 'tmp', uploadId)
+  if (!fs.existsSync(tmpDir)) return res.status(400).json({ error: '分片不存在或已过期' })
+  const safe = (path.basename(filename) || 'file').replace(/[^a-zA-Z0-9._-]/g, '') || 'file'
+  const finalName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`
+  const out = path.join(UPLOAD_DIR, finalName)
+  try {
+    const parts = []
+    for (let i = 0; i < total; i++) {
+      const p = path.join(tmpDir, String(i))
+      if (!fs.existsSync(p)) break
+      parts.push(fs.readFileSync(p))
+    }
+    fs.writeFileSync(out, Buffer.concat(parts))
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+    res.json({ url: '/uploads/' + finalName })
+  } catch (e) {
+    res.status(500).json({ error: '合并分片失败：' + e.message })
+  }
+})
+
 // 生产环境：托管前端构建产物（若存在）
 const clientDist = path.join(__dirname, '..', 'client', 'dist')
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist))
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) return next()
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
     res.sendFile(path.join(clientDist, 'index.html'))
   })
 }

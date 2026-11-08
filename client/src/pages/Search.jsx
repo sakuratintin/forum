@@ -61,6 +61,7 @@ export default function Search() {
                             {p.title}
                           </h3>
                           <div className="post-meta">
+                            <span className="avatar avatar-xs">{p.author?.avatar ? <img src={p.author.avatar} alt="" className="avatar-img" /> : p.author?.username?.[0]}</span>
                             <span className="post-author">{p.author?.username}</span>
                             <span>·</span>
                             <span>{p.created_at}</span>

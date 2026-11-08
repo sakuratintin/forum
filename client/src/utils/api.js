@@ -43,13 +43,43 @@ export const api = {
   del: (path) => request(path, { method: 'DELETE' }),
 }
 
-export async function uploadFile(file) {
-  const fd = new FormData()
-  fd.append('file', file)
+const CHUNK_SIZE = 1.5 * 1024 * 1024
+
+function authHeaders() {
   const headers = {}
   const t = getToken()
   if (t) headers['Authorization'] = 'Bearer ' + t
-  const res = await fetch(BASE + '/upload', { method: 'POST', headers, body: fd })
+  return headers
+}
+
+export async function uploadFile(file) {
+  // 小文件直接传；大文件分片传（绕过网关请求体大小限制）
+  if (!file || file.size <= 2 * 1024 * 1024) {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch(BASE + '/upload', { method: 'POST', headers: authHeaders(), body: fd })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.error || '上传失败')
+    return data.url
+  }
+
+  const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const total = Math.ceil(file.size / CHUNK_SIZE)
+  for (let i = 0; i < total; i++) {
+    const blob = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
+    const fd = new FormData()
+    fd.append('file', blob, 'chunk')
+    fd.append('uploadId', uploadId)
+    fd.append('index', String(i))
+    const res = await fetch(BASE + '/upload-chunk', { method: 'POST', headers: authHeaders(), body: fd })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.error || '上传失败')
+  }
+  const res = await fetch(BASE + '/upload-complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ uploadId, filename: file.name, total }),
+  })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(data.error || '上传失败')
   return data.url
