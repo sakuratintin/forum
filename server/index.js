@@ -440,6 +440,18 @@ app.post('/api/users/:username/follow', auth, (req, res) => {
 })
 
 // ===== 私信 =====
+app.get('/api/mutual', auth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT u.id, u.username, u.avatar, u.uid
+    FROM follows f1
+    JOIN follows f2 ON f2.follower_id = f1.following_id AND f2.following_id = f1.follower_id
+    JOIN users u ON u.id = f1.following_id
+    WHERE f1.follower_id = ?
+    ORDER BY f1.id DESC LIMIT 100
+  `).all(req.user.id)
+  res.json(rows)
+})
+
 app.get('/api/messages', auth, (req, res) => {
   const me = req.user.id
   const rows = db.prepare(`

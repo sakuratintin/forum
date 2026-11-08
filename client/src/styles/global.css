@@ -1496,6 +1496,25 @@ body::before {
 .msg-row.grouped { margin-top: -6px; }
 .msg-empty-sub { font-size: 0.78rem; color: var(--text-muted); }
 
+/* ===== 发起私信 ===== */
+.msg-new-btn {
+  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+  font-size: 1.1rem; color: var(--cyan-bright); border: 1px solid var(--line-strong);
+  background: rgba(34, 211, 238, 0.08); transition: all 0.2s ease;
+}
+.msg-new-btn:hover { background: rgba(34, 211, 238, 0.16); }
+.msg-mutual {
+  border-bottom: 1px solid var(--line); padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto;
+}
+.msg-mutual-item {
+  display: flex; align-items: center; gap: 10px; padding: 7px 8px;
+  border-radius: 8px; text-align: left; transition: background 0.2s ease;
+}
+.msg-mutual-item:hover { background: rgba(34, 211, 238, 0.08); }
+.msg-mutual-item .avatar { width: 30px; height: 30px; flex: none; }
+.msg-mutual-name { font-size: 0.86rem; color: var(--text); }
+
 /* ===== 提醒通知 ===== */
 .nav-bell {
   position: relative; display: grid; place-items: center;

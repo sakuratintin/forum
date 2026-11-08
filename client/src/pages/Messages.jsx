@@ -11,11 +11,21 @@ export default function Messages() {
   const [mutual, setMutual] = useState(false)
   const [text, setText] = useState('')
   const [err, setErr] = useState('')
+  const [showMutual, setShowMutual] = useState(false)
+  const [mutualList, setMutualList] = useState([])
   const bodyRef = useRef(null)
   const imgRef = useRef(null)
   const user = getAuthUser()
 
   const activeConv = conversations.find((c) => c.username === active)
+
+  function toggleMutual() {
+    const next = !showMutual
+    setShowMutual(next)
+    if (next) {
+      api.get('/mutual').then(setMutualList).catch(() => setMutualList([]))
+    }
+  }
 
   function loadConversations() {
     return api.get('/messages').then((list) => { setConversations(list); return list }).catch(() => [])
@@ -86,7 +96,33 @@ export default function Messages() {
       <div className="container">
         <div className="messages">
           <aside className="msg-side">
-            <div className="msg-side-head"><h2 className="msg-title">私信</h2></div>
+            <div className="msg-side-head">
+              <h2 className="msg-title">私信</h2>
+              <button type="button" className="msg-new-btn" onClick={toggleMutual} title="发起私信">
+                {showMutual ? '×' : '＋'}
+              </button>
+            </div>
+            {showMutual && (
+              <div className="msg-mutual">
+                {mutualList.length === 0 ? (
+                  <div className="msg-empty-sub">
+                    还没有可私信的人<br />去别人主页点「＋关注」，对方关注你后即可私信
+                  </div>
+                ) : (
+                  mutualList.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      className="msg-mutual-item"
+                      onClick={() => { setActive(u.username); setShowMutual(false) }}
+                    >
+                      <span className="avatar">{u.avatar ? <img src={u.avatar} alt="" className="avatar-img" /> : u.username[0]}</span>
+                      <span className="msg-mutual-name">{u.username}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
             <div className="msg-list">
               {conversations.length === 0 ? (
                 <div className="msg-empty">暂无会话<br /><span className="msg-empty-sub">互相关注后即可私信</span></div>
