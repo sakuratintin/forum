@@ -1,7 +1,28 @@
-// 全局点击涟漪反馈：在按钮/卡片/导航项上按下时生成涟漪
+// 全局点击涟漪反馈：在按钮/卡片/导航项等可点击元素上按下时生成涟漪
+const RIPPLE_SELECTOR = [
+  '.btn',
+  '.section-card',
+  '.nav-link',
+  '.nav-dropdown-item',
+  '.form-tab',
+  '.board-tab',
+  '.board-switch',
+  '.picker-trigger',
+  '.picker-option',
+  '.action-btn',
+  '.msg-item',
+  '.post-item',
+  '.user-card',
+  '.userlist-item',
+  '.ai-suggest-btn',
+  '.ai-mic',
+  '.reply-eva-btn',
+  '.pagination button',
+].join(', ')
+
 export function initRipple() {
   function onPointerDown(e) {
-    const el = e.target.closest('.btn, .section-card, .nav-link, .form-tab, .board-tab, .picker-trigger, .picker-option, .action-btn, .msg-item')
+    const el = e.target.closest(RIPPLE_SELECTOR)
     if (!el) return
     const rect = el.getBoundingClientRect()
     const size = Math.max(rect.width, rect.height)

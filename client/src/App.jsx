@@ -14,6 +14,7 @@ import Profile from './pages/Profile.jsx'
 import Messages from './pages/Messages.jsx'
 import Admin from './pages/Admin.jsx'
 import AiChat from './components/AiChat.jsx'
+import ScrollToTop from './components/ScrollToTop.jsx'
 import Search from './pages/Search.jsx'
 
 function AnimatedRoutes() {
@@ -51,6 +52,7 @@ export default function App() {
         <Footer />
       </div>
       <AiChat />
+      <ScrollToTop />
     </>
   )
 }

@@ -139,11 +139,16 @@ ul { list-style: none; }
 }
 
 /* ===== 点击涟漪 ===== */
+.btn, .section-card, .nav-link, .nav-dropdown-item, .form-tab, .board-tab, .board-switch,
+.picker-trigger, .picker-option, .action-btn, .msg-item, .post-item, .user-card, .userlist-item,
+.ai-suggest-btn, .ai-mic, .reply-eva-btn, .pagination button {
+  position: relative; overflow: hidden;
+}
 .ripple {
   position: absolute; border-radius: 50%;
-  background: rgba(0, 229, 255, 0.35);
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.55) 0%, rgba(0, 229, 255, 0.2) 45%, transparent 70%);
   transform: scale(0);
-  animation: ripple 0.5s ease-out forwards;
+  animation: ripple 0.55s ease-out forwards;
   pointer-events: none;
 }
 @keyframes ripple {
@@ -1234,6 +1239,32 @@ body::before {
 .section-card-all { border-color: rgba(34, 211, 238, 0.45); background: linear-gradient(160deg, rgba(34, 211, 238, 0.1), rgba(10, 15, 26, 0.5)); }
 .action-pin { color: var(--cyan-bright) !important; border-color: var(--line-strong) !important; }
 .action-pin:hover { background: rgba(34, 211, 238, 0.1); }
+
+/* ===== 按下反馈 ===== */
+.nav-link:active, .board-tab:active, .board-switch:active, .user-card:active,
+.userlist-item:active, .ai-suggest-btn:active, .msg-item:active, .nav-dropdown-item:active {
+  transform: scale(0.97);
+}
+
+/* ===== 帖子项左侧光条 ===== */
+.post-item::before {
+  content: ''; position: absolute; left: 0; top: 14%; bottom: 14%; width: 2px;
+  background: linear-gradient(180deg, transparent, var(--cyan), transparent);
+  opacity: 0; transition: opacity 0.25s ease;
+}
+.post-item:hover::before { opacity: 1; }
+
+/* ===== 回到顶部 ===== */
+.scroll-top {
+  position: fixed; right: 24px; bottom: 92px; z-index: 400;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.15rem;
+  color: var(--cyan-bright); border: 1px solid var(--line-strong);
+  background: rgba(10, 15, 26, 0.85); backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease; animation: fade-in 0.3s ease both;
+}
+.scroll-top:hover { border-color: var(--cyan); box-shadow: var(--glow); transform: translateY(-2px); }
 
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }
