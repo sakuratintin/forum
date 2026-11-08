@@ -576,6 +576,12 @@ app.get('/api/hot', (req, res) => {
   res.json({ summaries, items })
 })
 
+app.get('/api/hot/:id', (req, res) => {
+  const item = db.prepare('SELECT * FROM hot_topics WHERE id = ?').get(Number(req.params.id))
+  if (!item) return res.status(404).json({ error: '热点不存在' })
+  res.json(item)
+})
+
 // ===== 文件上传（图片 / 视频 / 头像） =====
 const upload = multer({
   storage: multer.diskStorage({

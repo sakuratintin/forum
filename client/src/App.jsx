@@ -17,6 +17,7 @@ import AiChat from './components/AiChat.jsx'
 import ScrollToTop from './components/ScrollToTop.jsx'
 import Search from './pages/Search.jsx'
 import Hot from './pages/Hot.jsx'
+import HotDetail from './pages/HotDetail.jsx'
 
 function AnimatedRoutes() {
   const location = useLocation()
@@ -33,6 +34,7 @@ function AnimatedRoutes() {
         <Route path="/new" element={<NewPost />} />
         <Route path="/search" element={<Search />} />
         <Route path="/hot" element={<Hot />} />
+        <Route path="/hot/:id" element={<HotDetail />} />
         <Route path="/login" element={<Login />} />
       </Routes>
     </div>

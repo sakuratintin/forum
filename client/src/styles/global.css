@@ -1297,6 +1297,9 @@ body::before {
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
 }
 .hot-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--text-muted); font-size: 0.75rem; margin-top: auto; }
+.hot-source-btn { text-decoration: none; }
+.hot-no-source { color: var(--text-muted); font-size: 0.85rem; padding: 12px 0; }
+.hot-detail .detail-head { gap: 10px; }
 
 @media (max-width: 640px) {
   .admin-stats { grid-template-columns: repeat(2, 1fr); }

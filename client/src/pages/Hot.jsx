@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api, getAuthUser } from '../utils/api.js'
 
 const TABS = [
@@ -10,9 +11,8 @@ const TABS = [
 const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫' }
 
 function HotCard({ h }) {
-  const safe = /^https?:\/\//i.test(h.link || '')
-  const inner = (
-    <>
+  return (
+    <Link to={`/hot/${h.id}`} className="hot-card fade-up">
       <span className="hot-cat">{CAT_LABEL[h.category] || h.category}</span>
       <h3 className="hot-title">{h.title}</h3>
       {h.summary && <p className="hot-excerpt">{h.summary}</p>}
@@ -20,12 +20,7 @@ function HotCard({ h }) {
         <span>{h.source || '未知来源'}</span>
         {h.published_at && <span>{h.published_at}</span>}
       </div>
-    </>
-  )
-  return safe ? (
-    <a href={h.link} target="_blank" rel="noreferrer noopener" className="hot-card fade-up">{inner}</a>
-  ) : (
-    <div className="hot-card fade-up">{inner}</div>
+    </Link>
   )
 }
 
