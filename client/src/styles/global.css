@@ -291,7 +291,7 @@ ul { list-style: none; }
 .hero-stat-label { color: var(--text-muted); font-size: 0.85rem; margin-top: 4px; }
 
 /* ===== 论坛板块 ===== */
-.sections { padding: 64px 0 80px; }
+.sections { padding: 48px 0 56px; }
 .sections-head { margin-bottom: 44px; }
 .sections-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
 .section-card {
@@ -1206,7 +1206,48 @@ body::before {
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .post-section { color: var(--cyan-bright); }
-.home-recent { padding: 8px 0 20px; }
+.home-recent { padding: 0; }
+
+/* ===== 首页：左右两栏布局 ===== */
+.home-content {
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 28px; align-items: start; padding-bottom: 64px;
+}
+.home-main { min-width: 0; }
+.home-side { display: flex; flex-direction: column; gap: 18px; }
+.side-card {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: rgba(10, 15, 26, 0.55); padding: 16px;
+}
+.side-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; color: var(--cyan-bright); font-size: 0.9rem;
+}
+.side-hot {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 10px 0; border-bottom: 1px dashed var(--line);
+}
+.side-hot:last-child { border-bottom: none; padding-bottom: 0; }
+.side-hot-title {
+  font-size: 0.87rem; color: var(--text); line-height: 1.5;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.side-hot:hover .side-hot-title { color: var(--cyan-bright); }
+.side-hot-meta { color: var(--text-muted); font-size: 0.72rem; }
+.side-empty { color: var(--text-muted); font-size: 0.85rem; }
+.side-link {
+  display: block; padding: 9px 10px; border-radius: 8px;
+  color: var(--text); font-size: 0.88rem; transition: all 0.2s ease;
+}
+.side-link:hover { background: rgba(34, 211, 238, 0.08); color: var(--cyan-bright); }
+.home-more { color: var(--cyan-bright); font-size: 0.84rem; white-space: nowrap; }
+.home-more:hover { text-shadow: 0 0 10px var(--cyan); }
+
+@media (max-width: 900px) {
+  .home-content { grid-template-columns: 1fr; }
+  .home-side { flex-direction: row; flex-wrap: wrap; }
+  .home-side .side-card { flex: 1 1 280px; }
+}
 
 /* ===== EVA AI 回复 ===== */
 .reply-item.ai {
