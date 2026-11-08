@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import PostRow from '../components/PostRow.jsx'
+import SkeletonRows from '../components/Skeleton.jsx'
 
 const SORTS = [
   { key: 'latest', label: '最新' },
@@ -83,9 +84,11 @@ export default function PostList() {
         </div>
 
         {pLoading ? (
-          <div className="post-empty">加载中…</div>
+          <SkeletonRows count={5} />
         ) : posts.length === 0 ? (
-          <div className="post-empty">该板块下暂无帖子</div>
+          <div className="post-empty">
+            该板块下暂无帖子，<Link to={`/new${isAll ? '' : `?section=${slug}`}`} className="empty-link">发布第一帖 →</Link>
+          </div>
         ) : (
           <div className="post-list">
             {posts.map((p, i) => (

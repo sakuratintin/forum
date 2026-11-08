@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api, getAuthUser } from '../utils/api.js'
+import { toastOk, toastErr } from '../utils/toast.js'
 
 export default function FollowButton({ username, initialFollowing, onChange }) {
   const me = getAuthUser()
@@ -16,9 +17,10 @@ export default function FollowButton({ username, initialFollowing, onChange }) {
     try {
       const r = await api.post(`/users/${encodeURIComponent(username)}/follow`)
       setFollowing(r.following)
+      toastOk(r.following ? '已关注' : '已取消关注')
       if (onChange) onChange(r.following)
-    } catch {
-      /* ignore */
+    } catch (ex) {
+      toastErr(ex.message)
     } finally {
       setBusy(false)
     }

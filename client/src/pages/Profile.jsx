@@ -5,6 +5,8 @@ import { api, getAuthUser } from '../utils/api.js'
 import EditProfileModal from '../components/EditProfileModal.jsx'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import UserListModal from '../components/UserListModal.jsx'
+import SkeletonRows from '../components/Skeleton.jsx'
+import { toastOk, toastErr } from '../utils/toast.js'
 
 export default function Profile() {
   const { username } = useParams()
@@ -17,7 +19,7 @@ export default function Profile() {
   const isSelf = me?.username === username
 
   if (loading && !user) {
-    return <div className="page"><div className="container post-empty">加载中…</div></div>
+    return <div className="page"><div className="container"><SkeletonRows count={2} /></div></div>
   }
   if (error && !user) {
     return <div className="page"><div className="container page-card"><h2>加载失败</h2><p>{error}</p></div></div>
@@ -39,9 +41,10 @@ export default function Profile() {
     try {
       await api.del(`/posts/${confirmPost.id}`)
       setConfirmPost(null)
+      toastOk('帖子已删除')
       reload()
-    } catch {
-      /* ignore */
+    } catch (ex) {
+      toastErr(ex.message)
     } finally {
       setDeleting(false)
     }

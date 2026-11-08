@@ -5,6 +5,7 @@ import { api } from '../utils/api.js'
 import Hero from '../components/Hero.jsx'
 import ForumSections from '../components/ForumSections.jsx'
 import PostRow from '../components/PostRow.jsx'
+import SkeletonRows from '../components/Skeleton.jsx'
 
 const CAT_LABEL = { news: '新闻', sports: '赛事', anime: '动漫', game: '游戏' }
 
@@ -79,9 +80,11 @@ export default function Home() {
               <div className="accent-bar" />
             </div>
             {recentLoading ? (
-              <div className="post-empty">加载中…</div>
+              <SkeletonRows count={4} />
             ) : recent.length === 0 ? (
-              <div className="post-empty">还没有帖子，快来发第一帖吧！</div>
+              <div className="post-empty">
+                还没有帖子，<Link to="/new" className="empty-link">发布第一帖 →</Link>
+              </div>
             ) : (
               <div className="post-list">
                 {recent.map((p, i) => (

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, getAuthUser } from '../utils/api.js'
+import { SkeletonCards } from '../components/Skeleton.jsx'
+import { toastOk, toastErr } from '../utils/toast.js'
 
 const TABS = [
   { key: 'all', label: '全部' },
@@ -60,9 +62,11 @@ export default function Hot() {
       let text = '✅ 抓取完成：' + (parts.join('，') || '无新增')
       if (r.errors && r.errors.length) text += '（部分失败：' + r.errors.join('；') + '）'
       setMsg(text)
+      toastOk('抓取完成')
       await load()
     } catch (ex) {
       setMsg('抓取失败：' + ex.message)
+      toastErr(ex.message)
     } finally {
       setFetching(false)
     }
@@ -101,7 +105,7 @@ export default function Hot() {
         )}
 
         {loading ? (
-          <div className="post-empty">加载中…</div>
+          <SkeletonCards count={6} />
         ) : items.length === 0 ? (
           <div className="post-empty">{isAdmin ? '还没有热点，点右上角「🔄 抓取热点」试试' : '还没有热点，请管理员抓取'}</div>
         ) : (

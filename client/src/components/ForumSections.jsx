@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SkeletonCards } from './Skeleton.jsx'
 
 export default function ForumSections({ sections = [], loading = false }) {
   return (
@@ -10,7 +11,7 @@ export default function ForumSections({ sections = [], loading = false }) {
           <div className="accent-bar" />
         </div>
         {loading ? (
-          <div className="post-empty">加载中…</div>
+          <SkeletonCards count={6} />
         ) : (
           <div className="sections-grid">
             <Link to="/section/all" className="section-card section-card-all fade-up">

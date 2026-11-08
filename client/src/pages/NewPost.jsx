@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser, uploadFile } from '../utils/api.js'
+import { toastOk, toastErr } from '../utils/toast.js'
 import MediaUploader from '../components/MediaUploader.jsx'
 import SectionPicker from '../components/SectionPicker.jsx'
 
@@ -51,6 +52,7 @@ export default function NewPost() {
   function fail(msg) {
     setError(msg)
     setShakeKey((k) => k + 1)
+    toastErr(msg)
   }
 
   async function aiCall(prompt) {
@@ -106,6 +108,7 @@ export default function NewPost() {
       const mediaUrls = []
       for (const f of media) mediaUrls.push(await uploadFile(f))
       const created = await api.post('/posts', { title: title.trim(), section, content: content.trim(), media: mediaUrls })
+      toastOk('发帖成功')
       navigate(`/post/${created.id}`)
     } catch (ex) {
       fail(ex.message)

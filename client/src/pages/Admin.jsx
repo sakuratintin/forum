@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
+import { toastOk, toastErr } from '../utils/toast.js'
 
 export default function Admin() {
   const user = getAuthUser()
@@ -45,24 +46,29 @@ function AdminPanel() {
       await api.post('/admin/announcements', { title: title.trim(), content: content.trim() })
       setTitle(''); setContent('')
       reloadAnn(); reloadStats()
+      toastOk('通告已发布')
     } catch (ex) {
       setErr(ex.message)
+      toastErr(ex.message)
     }
   }
 
   async function handleDeleteAnn(id) {
     await api.del(`/admin/announcements/${id}`)
     reloadAnn(); reloadStats()
+    toastOk('通告已删除')
   }
 
   async function handleDeletePost(id) {
     await api.del(`/posts/${id}`)
     reloadPosts(); reloadStats()
+    toastOk('帖子已删除')
   }
 
   async function handleMute(u, muted) {
     await api.post(`/admin/users/${encodeURIComponent(u.username)}/${muted ? 'unmute' : 'mute'}`)
     reloadUsers()
+    toastOk(muted ? '已解禁' : '已禁言')
   }
 
   async function handleSetModel(provider) {
@@ -70,8 +76,10 @@ function AdminPanel() {
     try {
       await api.put('/admin/ai-model', { provider })
       reloadAI()
+      toastOk(provider === 'deepseek' ? '已切换到 DeepSeek' : '已切换到智谱 GLM-4-Flash')
     } catch (ex) {
       setErr(ex.message)
+      toastErr(ex.message)
     }
   }
 

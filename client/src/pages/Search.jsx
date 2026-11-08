@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import FollowButton from '../components/FollowButton.jsx'
 import PostRow from '../components/PostRow.jsx'
+import SkeletonRows from '../components/Skeleton.jsx'
 
 export default function Search() {
   const [searchParams] = useSearchParams()
@@ -50,7 +51,7 @@ export default function Search() {
               <>
                 <p className="search-count">找到 {postTotal} 条与「{q}」相关的帖子</p>
                 {postLoading ? (
-                  <div className="post-empty">搜索中…</div>
+                  <SkeletonRows count={4} />
                 ) : posts.length === 0 ? (
                   <div className="post-empty">没有找到相关帖子</div>
                 ) : (
@@ -65,7 +66,7 @@ export default function Search() {
               <>
                 <p className="search-count">找到 {users.length} 位与「{q}」相关的用户</p>
                 {userLoading ? (
-                  <div className="post-empty">搜索中…</div>
+                  <SkeletonRows count={3} />
                 ) : users.length === 0 ? (
                   <div className="post-empty">没有找到相关用户</div>
                 ) : (

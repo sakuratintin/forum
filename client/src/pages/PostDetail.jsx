@@ -3,6 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser } from '../utils/api.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
+import SkeletonRows from '../components/Skeleton.jsx'
+import { toastOk, toastErr } from '../utils/toast.js'
 
 function isVideo(m) {
   return typeof m === 'string' && (/^data:video\//.test(m) || /\.(mp4|webm|mov|ogg|m4v)$/i.test(m))
@@ -24,7 +26,7 @@ export default function PostDetail() {
   const navigate = useNavigate()
 
   if (loading && !post) {
-    return <div className="page"><div className="container post-empty">加载中…</div></div>
+    return <div className="page"><div className="container"><SkeletonRows count={2} /></div></div>
   }
   if (error && !post) {
     return <div className="page"><div className="container page-card"><h2>加载失败</h2><p>{error}</p></div></div>
@@ -87,8 +89,10 @@ export default function PostDetail() {
     setDeleting(true)
     try {
       await api.del(`/posts/${post.id}`)
+      toastOk('帖子已删除')
       navigate(sectionSlug ? `/section/${sectionSlug}` : '/')
     } catch (ex) {
+      toastErr(ex.message)
       setReplyErr(ex.message)
       setShowDelete(false)
       setDeleting(false)

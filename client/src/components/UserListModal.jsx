@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../utils/api.js'
 import FollowButton from './FollowButton.jsx'
+import SkeletonRows from './Skeleton.jsx'
 
 export default function UserListModal({ open, title, path, onClose }) {
   const [users, setUsers] = useState([])
@@ -24,7 +25,7 @@ export default function UserListModal({ open, title, path, onClose }) {
         <h3 className="modal-title">{title}</h3>
         <div className="userlist">
           {loading ? (
-            <div className="post-empty">加载中…</div>
+            <SkeletonRows count={3} />
           ) : users.length === 0 ? (
             <div className="post-empty">暂无</div>
           ) : (
