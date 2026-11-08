@@ -10,6 +10,8 @@ initDb()
 
 const SECRET = 'hct-forum-secret'
 const AI_KEY = process.env.AI_API_KEY || ''
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || ''
+const AI_PROVIDER = process.env.AI_PROVIDER || (DEEPSEEK_KEY ? 'deepseek' : 'zhipu')
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(path.dirname(process.env.DB_PATH || path.join(__dirname, 'forum.db')), 'uploads')
 fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 
@@ -456,22 +458,42 @@ app.get('/api/admin/users', auth, adminOnly, (req, res) => {
   res.json(db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC').all())
 })
 
-// ===== AI 助手（智谱 GLM） =====
-async function callAI(messages) {
-  if (!AI_KEY) throw new Error('AI 未配置，请设置环境变量 AI_API_KEY')
+// ===== AI 助手（可在智谱 / DeepSeek 之间切换） =====
+function chatConfigured() {
+  return AI_PROVIDER === 'deepseek' ? !!DEEPSEEK_KEY : !!AI_KEY
+}
+
+async function callZhipu(messages) {
+  if (!AI_KEY) throw new Error('智谱 AI 未配置，请设置环境变量 AI_API_KEY')
   const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_KEY },
-    body: JSON.stringify({ model: 'glm-4-flash', messages }),
+    body: JSON.stringify({ model: process.env.ZHIPU_MODEL || 'glm-4-flash', messages }),
   })
   const data = await resp.json()
-  if (!resp.ok) throw new Error((data && data.error && data.error.message) || 'AI 调用失败')
+  if (!resp.ok) throw new Error((data && data.error && data.error.message) || '智谱 AI 调用失败')
   return (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || ''
+}
+
+async function callDeepSeek(messages) {
+  if (!DEEPSEEK_KEY) throw new Error('DeepSeek 未配置，请设置环境变量 DEEPSEEK_API_KEY')
+  const resp = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_KEY },
+    body: JSON.stringify({ model: process.env.DEEPSEEK_MODEL || 'deepseek-chat', messages }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error((data && data.error && data.error.message) || 'DeepSeek 调用失败')
+  return (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || ''
+}
+
+async function callAI(messages) {
+  return AI_PROVIDER === 'deepseek' ? callDeepSeek(messages) : callZhipu(messages)
 }
 
 app.post('/api/ai/chat', async (req, res) => {
   const { messages, system } = req.body || {}
-  if (!AI_KEY) return res.status(503).json({ error: 'AI 未配置，请设置环境变量 AI_API_KEY' })
+  if (!chatConfigured()) return res.status(503).json({ error: 'AI 未配置，请设置环境变量 AI_API_KEY 或 DEEPSEEK_API_KEY' })
   if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ error: '消息不能为空' })
   try {
     const content = await callAI(system ? [{ role: 'system', content: system }, ...messages] : messages)
