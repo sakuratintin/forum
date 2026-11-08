@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { api, getAuthUser } from '../utils/api.js'
-import { fileToImageDataUrl } from '../utils/image.js'
+import { api, getAuthUser, uploadFile } from '../utils/api.js'
+import { toastErr } from '../utils/toast.js'
 
 export default function Messages() {
   const { username } = useParams()
@@ -14,6 +14,8 @@ export default function Messages() {
   const bodyRef = useRef(null)
   const imgRef = useRef(null)
   const user = getAuthUser()
+
+  const activeConv = conversations.find((c) => c.username === active)
 
   function loadConversations() {
     return api.get('/messages').then((list) => { setConversations(list); return list }).catch(() => [])
@@ -33,7 +35,8 @@ export default function Messages() {
   }, [active])
 
   useEffect(() => {
-    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight })
+    const t = setTimeout(() => bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight }), 30)
+    return () => clearTimeout(t)
   }, [messages, active])
 
   async function handleSend(e) {
@@ -47,6 +50,7 @@ export default function Messages() {
       loadConversations()
     } catch (ex) {
       setErr(ex.message)
+      toastErr(ex.message)
     }
   }
 
@@ -56,12 +60,13 @@ export default function Messages() {
     if (!file || !active || !mutual) return
     setErr('')
     try {
-      const dataUrl = await fileToImageDataUrl(file, 800)
-      const m = await api.post(`/messages/${encodeURIComponent(active)}`, { image: dataUrl })
+      const url = await uploadFile(file)
+      const m = await api.post(`/messages/${encodeURIComponent(active)}`, { image: url })
       setMessages((prev) => [...prev, m])
       loadConversations()
     } catch (ex) {
       setErr(ex.message)
+      toastErr(ex.message)
     }
   }
 
@@ -84,7 +89,7 @@ export default function Messages() {
             <div className="msg-side-head"><h2 className="msg-title">私信</h2></div>
             <div className="msg-list">
               {conversations.length === 0 ? (
-                <div className="msg-empty">暂无会话</div>
+                <div className="msg-empty">暂无会话<br /><span className="msg-empty-sub">互相关注后即可私信</span></div>
               ) : (
                 conversations.map((c) => (
                   <button key={c.username} type="button" className={`msg-item${active === c.username ? ' active' : ''}`} onClick={() => setActive(c.username)}>
@@ -101,23 +106,29 @@ export default function Messages() {
 
           <section className="msg-chat">
             {!active ? (
-              <div className="msg-empty">选择或发起一个会话</div>
+              <div className="msg-empty">选择左侧会话开始聊天</div>
             ) : (
               <>
                 <div className="msg-chat-head">
-                  <span className="avatar">{active[0]}</span>
+                  <span className="avatar">{activeConv?.avatar ? <img src={activeConv.avatar} alt="" className="avatar-img" /> : active[0]}</span>
                   <span className="msg-chat-name">{active}</span>
                   <Link to={`/user/${encodeURIComponent(active)}`} className="msg-view-profile">查看主页</Link>
                 </div>
                 <div className="msg-body" ref={bodyRef}>
-                  {messages.map((m) => (
-                    <div key={m.id} className={`msg-row ${m.from_me ? 'me' : 'them'}`}>
-                      <div className="msg-bubble">
-                        {m.image && <img src={m.image} alt="图片" className="msg-img" />}
-                        {m.content ? <span>{m.content}</span> : null}
+                  {messages.length === 0 && <div className="msg-empty">还没有消息，打个招呼吧 👋</div>}
+                  {messages.map((m, i) => {
+                    const prev = messages[i - 1]
+                    const sameSide = prev && prev.from_me === m.from_me
+                    return (
+                      <div key={m.id} className={`msg-row ${m.from_me ? 'me' : 'them'}${sameSide ? ' grouped' : ''}`}>
+                        <div className="msg-bubble">
+                          {m.image && <img src={m.image} alt="图片" className="msg-img" />}
+                          {m.content ? <span>{m.content}</span> : null}
+                        </div>
+                        {!sameSide && <span className="msg-time">{m.created_at?.slice(11, 16)}</span>}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 <form className="msg-input" onSubmit={handleSend}>
                   <input ref={imgRef} type="file" accept="image/*" hidden onChange={handleImage} />
@@ -130,7 +141,7 @@ export default function Messages() {
                     disabled={!mutual}
                     onChange={(e) => setText(e.target.value)}
                   />
-                  <button type="submit" className="btn btn-primary" disabled={!mutual}>发送</button>
+                  <button type="submit" className="btn btn-primary" disabled={!mutual || !text.trim()}>发送</button>
                 </form>
                 {err && <p className="form-error">{err}</p>}
               </>

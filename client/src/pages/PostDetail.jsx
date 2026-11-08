@@ -172,6 +172,9 @@ export default function PostDetail() {
               {translating ? '翻译中…' : '🌐 翻译'}
             </button>
             {canDelete && (
+              <Link to={`/post/${post.id}/edit`} className="action-btn">✏️ 编辑</Link>
+            )}
+            {canDelete && (
               <button type="button" className="action-btn action-danger" onClick={() => setShowDelete(true)}>🗑 删除</button>
             )}
             {isAdmin && (

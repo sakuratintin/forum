@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate, Link } from 'react-router-dom'
+import { useSearchParams, useParams, useNavigate, Link } from 'react-router-dom'
 import useApi from '../hooks/useApi.js'
 import { api, getAuthUser, uploadFile } from '../utils/api.js'
 import { toastOk, toastErr } from '../utils/toast.js'
@@ -8,19 +8,45 @@ import SectionPicker from '../components/SectionPicker.jsx'
 
 export default function NewPost() {
   const [searchParams] = useSearchParams()
+  const { id: editId } = useParams()
+  const isEdit = !!editId
   const { data: sections } = useApi('/sections')
   const secs = sections || []
   const [title, setTitle] = useState('')
   const [section, setSection] = useState(searchParams.get('section') || '')
   const [content, setContent] = useState('')
   const [media, setMedia] = useState([])
+  const [existingMedia, setExistingMedia] = useState([])
   const [error, setError] = useState('')
   const [shakeKey, setShakeKey] = useState(0)
   const [done, setDone] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [aiBusy, setAiBusy] = useState('')
+  const [loadingEdit, setLoadingEdit] = useState(isEdit)
   const user = getAuthUser()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!isEdit) return
+    let alive = true
+    api.get(`/posts/${editId}`)
+      .then((p) => {
+        if (!alive) return
+        setTitle(p.title || '')
+        setContent(p.content || '')
+        setSection(p.section_slug || '')
+        setExistingMedia(Array.isArray(p.media) ? p.media : [])
+      })
+      .catch((ex) => {
+        if (alive) setError('加载失败：' + ex.message)
+      })
+      .finally(() => {
+        if (alive) setLoadingEdit(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [isEdit, editId])
 
   useEffect(() => {
     if (secs.length && !secs.some((s) => s.slug === section)) {
@@ -101,10 +127,16 @@ export default function NewPost() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!title.trim()) return fail('请填写标题')
-    if (!content.trim() && media.length === 0) return fail('请填写正文或上传附件')
+    if (!content.trim() && media.length === 0 && existingMedia.length === 0) return fail('请填写正文或上传附件')
     setError('')
     setSubmitting(true)
     try {
+      if (isEdit) {
+        const updated = await api.put(`/posts/${editId}`, { title: title.trim(), section, content: content.trim() })
+        toastOk('修改已保存')
+        navigate(`/post/${updated.id || editId}`)
+        return
+      }
       const mediaUrls = []
       for (const f of media) mediaUrls.push(await uploadFile(f))
       const created = await api.post('/posts', { title: title.trim(), section, content: content.trim(), media: mediaUrls })
@@ -117,12 +149,16 @@ export default function NewPost() {
     }
   }
 
+  if (isEdit && loadingEdit) {
+    return <div className="page"><div className="container post-empty">加载中…</div></div>
+  }
+
   return (
     <div className="page">
       <div className="container">
         <div className="page-head">
-          <h1 className="page-title">发布新帖</h1>
-          <p className="page-sub">分享你的想法，与社区交流</p>
+          <h1 className="page-title">{isEdit ? '编辑帖子' : '发布新帖'}</h1>
+          <p className="page-sub">{isEdit ? '修改完成后保存即可生效' : '分享你的想法，与社区交流'}</p>
         </div>
 
         <form className="form-card" onSubmit={handleSubmit}>
@@ -159,13 +195,25 @@ export default function NewPost() {
             </button>
           </div>
 
-          <MediaUploader files={media} onChange={setMedia} />
+          {isEdit ? (
+            existingMedia.length > 0 && (
+              <p className="form-hint">本帖包含 {existingMedia.length} 个附件，编辑模式下暂不支持修改附件。</p>
+            )
+          ) : (
+            <MediaUploader files={media} onChange={setMedia} />
+          )}
 
           {error && <p key={shakeKey} className="form-error shake">{error}</p>}
 
           <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? '发布中…' : '发布'}</button>
-            <span className="form-hint">支持图片和视频附件</span>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? '保存中…' : isEdit ? '保存修改' : '发布'}
+            </button>
+            {isEdit ? (
+              <Link to={`/post/${editId}`} className="btn btn-ghost">取消</Link>
+            ) : (
+              <span className="form-hint">支持图片和视频附件</span>
+            )}
           </div>
 
           {done && <div className="form-toast">{done}</div>}

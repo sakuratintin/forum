@@ -27,6 +27,7 @@ function AnimatedRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/section/:slug" element={<PostList />} />
         <Route path="/post/:id" element={<PostDetail />} />
+        <Route path="/post/:id/edit" element={<NewPost />} />
         <Route path="/user/:username" element={<Profile />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:username" element={<Messages />} />

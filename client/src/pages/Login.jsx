@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, setToken, setAuthUser, notifyAuthChanged } from '../utils/api.js'
+import { toastOk } from '../utils/toast.js'
+
+function passwordStrength(pw) {
+  if (!pw) return 0
+  let s = 0
+  if (pw.length >= 6) s++
+  if (pw.length >= 10) s++
+  if (/[a-zA-Z]/.test(pw) && /\d/.test(pw)) s++
+  if (/[^a-zA-Z0-9]/.test(pw)) s++
+  return s
+}
+const STRENGTH_LABEL = ['', '弱', '中', '强', '很强']
 
 export default function Login() {
   const [mode, setMode] = useState('login')
@@ -11,6 +23,7 @@ export default function Login() {
   const [shakeKey, setShakeKey] = useState(0)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const strength = passwordStrength(password)
 
   function fail(msg) {
     setError(msg)
@@ -20,7 +33,11 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!username.trim() || !password) return fail('请填写用户名和密码')
-    if (mode === 'register' && password !== confirm) return fail('两次输入的密码不一致')
+    if (mode === 'register') {
+      if (username.trim().length < 2 || username.trim().length > 20) return fail('用户名需 2-20 个字符')
+      if (password.length < 6) return fail('密码至少 6 位')
+      if (password !== confirm) return fail('两次输入的密码不一致')
+    }
     setError('')
     setLoading(true)
     try {
@@ -29,6 +46,7 @@ export default function Login() {
       setToken(data.token)
       setAuthUser(data.user)
       notifyAuthChanged()
+      toastOk(mode === 'register' ? `注册成功！你的 UID：${data.user?.uid || '—'}` : '登录成功')
       navigate('/')
     } catch (ex) {
       fail(ex.message)
@@ -49,17 +67,27 @@ export default function Login() {
 
           <form onSubmit={handleSubmit}>
             <label className="field">
-              <span className="field-label">用户名</span>
+              <span className="field-label-row">
+                <span className="field-label">用户名</span>
+                {mode === 'register' && <span className="field-hint">2-20 个字符</span>}
+              </span>
               <input className="input" type="text" placeholder="输入用户名" value={username} autoComplete="username" onChange={(e) => setUsername(e.target.value)} />
             </label>
             <label className="field">
-              <span className="field-label">密码</span>
+              <span className="field-label-row">
+                <span className="field-label">密码</span>
+                {mode === 'register' && password && (
+                  <span className={`pw-strength s${strength}`}>{STRENGTH_LABEL[strength]}</span>
+                )}
+              </span>
               <input className="input" type="password" placeholder="输入密码" value={password} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} onChange={(e) => setPassword(e.target.value)} />
+              {mode === 'register' && <span className="field-hint">至少 6 位，建议字母 + 数字组合</span>}
             </label>
             {mode === 'register' && (
               <label className="field">
                 <span className="field-label">确认密码</span>
                 <input className="input" type="password" placeholder="再次输入密码" value={confirm} autoComplete="new-password" onChange={(e) => setConfirm(e.target.value)} />
+                {confirm && confirm !== password && <span className="field-hint err">两次密码不一致</span>}
               </label>
             )}
             {error && <p key={shakeKey} className="form-error shake">{error}</p>}

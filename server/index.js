@@ -210,6 +210,24 @@ app.post('/api/posts', auth, (req, res) => {
   res.json(serializePost(db.prepare('SELECT * FROM posts WHERE id = ?').get(Number(info.lastInsertRowid)), req.user.id))
 })
 
+// 编辑帖子（作者本人或管理员）
+app.put('/api/posts/:id', auth, (req, res) => {
+  const p = db.prepare('SELECT * FROM posts WHERE id = ?').get(Number(req.params.id))
+  if (!p) return res.status(404).json({ error: '帖子不存在' })
+  const me = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id)
+  if (!me || (p.author_id !== req.user.id && me.role !== 'admin')) return res.status(403).json({ error: '无权编辑此帖' })
+  const { title, section, content = '' } = req.body || {}
+  if (!title || !title.trim()) return res.status(400).json({ error: '标题不能为空' })
+  let sectionId = p.section_id
+  if (section) {
+    const sec = db.prepare('SELECT id FROM sections WHERE slug = ?').get(section)
+    if (!sec) return res.status(400).json({ error: '板块不存在' })
+    sectionId = sec.id
+  }
+  db.prepare('UPDATE posts SET title = ?, section_id = ?, content = ? WHERE id = ?').run(title.trim(), sectionId, content.trim(), p.id)
+  res.json(serializePost(db.prepare('SELECT * FROM posts WHERE id = ?').get(p.id), req.user.id))
+})
+
 app.delete('/api/posts/:id', auth, (req, res) => {
   const p = db.prepare('SELECT * FROM posts WHERE id = ?').get(Number(req.params.id))
   if (!p) return res.status(404).json({ error: '帖子不存在' })
