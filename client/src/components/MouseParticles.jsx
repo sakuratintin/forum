@@ -1,16 +1,20 @@
 import { useEffect, useRef } from 'react'
 
 // 跟随鼠标的动态粒子网络（canvas 实现，无外部依赖）
+// 触屏设备不启用：既没有鼠标跟随，又会持续占用 CPU 导致输入法/滚动卡顿
 export default function MouseParticles() {
   const canvasRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    if (typeof window === 'undefined') return
+    const isTouch = window.matchMedia('(hover: none)').matches || (navigator.maxTouchPoints || 0) > 0
+    if (isTouch) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    let raf
+    let raf = 0
     let w = 0
     let h = 0
     let particles = []
@@ -37,7 +41,7 @@ export default function MouseParticles() {
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      const count = Math.min(90, Math.floor((w * h) / 22000))
+      const count = Math.min(70, Math.floor((w * h) / 26000))
       particles = Array.from({ length: count }, spawn)
     }
 
@@ -47,7 +51,6 @@ export default function MouseParticles() {
     function step() {
       ctx.clearRect(0, 0, w, h)
 
-      // 鼠标周围柔光
       if (mouse.active) {
         const g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 44)
         g.addColorStop(0, 'rgba(0,229,255,0.22)')
@@ -61,7 +64,6 @@ export default function MouseParticles() {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
 
-        // 鼠标吸引
         if (mouse.active) {
           const dx = mouse.x - p.x
           const dy = mouse.y - p.y
@@ -86,7 +88,6 @@ export default function MouseParticles() {
         if (p.y < -20) p.y = h + 20
         else if (p.y > h + 20) p.y = -20
 
-        // 粒子间连线
         for (let j = i + 1; j < particles.length; j++) {
           const q = particles[j]
           const dx = p.x - q.x
@@ -103,7 +104,6 @@ export default function MouseParticles() {
           }
         }
 
-        // 与鼠标连线
         if (mouse.active) {
           const dx = p.x - mouse.x
           const dy = p.y - mouse.y
@@ -138,18 +138,29 @@ export default function MouseParticles() {
       mouse.x = -9999
       mouse.y = -9999
     }
+    // 页面隐藏时暂停渲染，省电
+    function onVisibility() {
+      if (document.hidden) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      } else if (!raf) {
+        step()
+      }
+    }
 
     resize()
     step()
     window.addEventListener('resize', resize)
-    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mousemove', onMove, { passive: true })
     document.addEventListener('mouseleave', onLeave)
+    document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseleave', onLeave)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
 

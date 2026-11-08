@@ -1454,6 +1454,47 @@ body::before {
 .data-item b { color: var(--text); font-size: 0.9rem; word-break: break-all; }
 @media (max-width: 640px) { .data-grid { grid-template-columns: 1fr; } }
 
+/* ===== 移动端性能与输入优化（解决输入法卡顿/缩放） ===== */
+@media (max-width: 768px) {
+  /* 关闭昂贵的毛玻璃效果，避免输入法弹起、滚动时掉帧 */
+  * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 关掉毛玻璃后加深背景，保证文字可读 */
+  .navbar { background: rgba(5, 7, 13, 0.97) !important; }
+  .ai-panel { background: #0e1524 !important; }
+  .modal-panel { background: #0e1524 !important; }
+  .side-card { background: #0b1220 !important; }
+
+  /* 输入框字号 ≥ 16px，防止 iOS 聚焦时自动放大页面 */
+  .input,
+  textarea,
+  input,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* 去掉模糊滤镜的过场动画，只保留淡入 */
+  .route-transition { animation: fade-in 0.2s ease both; }
+
+  /* 触屏不需要鼠标粒子 */
+  .mouse-particles { display: none !important; }
+
+  /* 减少装饰性动画 */
+  .section-card::after { display: none; }
+  .bg-particle { opacity: 0.2; }
+
+  /* 点击响应更跟手（消除 300ms 延迟与双击缩放） */
+  button,
+  a,
+  .btn {
+    touch-action: manipulation;
+  }
+}
+
 @media (max-width: 640px) {
   .model-options { grid-template-columns: 1fr; }
 }
