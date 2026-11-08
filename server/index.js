@@ -4,7 +4,7 @@ const express = require('express')
 const multer = require('multer')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const { db, initDb } = require('./db')
+const { db, initDb, dbPath } = require('./db')
 
 initDb()
 
@@ -464,6 +464,49 @@ app.post('/api/admin/users/:username/unmute', auth, adminOnly, (req, res) => {
 
 app.get('/api/admin/users', auth, adminOnly, (req, res) => {
   res.json(db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC').all())
+})
+
+// ===== 管理员：数据备份 =====
+app.get('/api/admin/data-info', auth, adminOnly, (req, res) => {
+  let size = 0
+  try {
+    size = fs.statSync(dbPath).size
+  } catch {
+    /* ignore */
+  }
+  const dir = path.join(path.dirname(dbPath), 'backups')
+  let backups = []
+  try {
+    backups = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.db'))
+      .sort()
+      .reverse()
+      .map((f) => {
+        const st = fs.statSync(path.join(dir, f))
+        return { name: f, size: st.size, time: st.mtime.toISOString() }
+      })
+  } catch {
+    /* ignore */
+  }
+  res.json({
+    dbPath,
+    dbSize: size,
+    backupDir: dir,
+    backups,
+    counts: {
+      users: db.prepare('SELECT COUNT(*) c FROM users').get().c,
+      posts: db.prepare('SELECT COUNT(*) c FROM posts').get().c,
+      replies: db.prepare('SELECT COUNT(*) c FROM replies').get().c,
+    },
+  })
+})
+
+app.get('/api/admin/backup', auth, adminOnly, (req, res) => {
+  if (!fs.existsSync(dbPath)) return res.status(404).json({ error: '数据库文件不存在' })
+  const d = new Date()
+  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+  res.download(dbPath, `forum-backup-${stamp}.db`)
 })
 
 // ===== 管理员：选择 AI 模型 =====

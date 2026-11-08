@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import useApi from '../hooks/useApi.js'
-import { api, getAuthUser } from '../utils/api.js'
+import { api, getAuthUser, getToken } from '../utils/api.js'
 import { toastOk, toastErr } from '../utils/toast.js'
+
+function fmtSize(n) {
+  if (!n) return '—'
+  if (n < 1024) return n + ' B'
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB'
+  return (n / 1024 / 1024).toFixed(1) + ' MB'
+}
 
 export default function Admin() {
   const user = getAuthUser()
@@ -31,6 +38,7 @@ function AdminPanel() {
   const { data: postData, reload: reloadPosts } = useApi('/posts?pageSize=100')
   const { data: userList, reload: reloadUsers } = useApi('/admin/users')
   const { data: aiModel, reload: reloadAI } = useApi('/admin/ai-model')
+  const { data: dataInfo, reload: reloadData } = useApi('/admin/data-info')
 
   const allPosts = postData?.posts || []
   const pq = postQuery.trim().toLowerCase()
@@ -83,11 +91,31 @@ function AdminPanel() {
     }
   }
 
+  async function handleDownloadBackup() {
+    try {
+      const res = await fetch('/api/admin/backup', { headers: { Authorization: 'Bearer ' + getToken() } })
+      if (!res.ok) throw new Error('下载失败')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `forum-backup-${Date.now()}.db`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toastOk('备份已下载')
+    } catch (ex) {
+      toastErr(ex.message)
+    }
+  }
+
   const TABS = [
     { key: 'announce', label: '发布通告' },
     { key: 'posts', label: '帖子管理' },
     { key: 'users', label: '用户管理' },
     { key: 'ai', label: 'AI 模型' },
+    { key: 'data', label: '数据备份' },
   ]
 
   return (
@@ -250,6 +278,50 @@ function AdminPanel() {
             <p className="admin-row-sub" style={{ marginTop: 14 }}>
               注：语音识别、热点联网搜索固定使用智谱（DeepSeek 不提供这两项能力）。
             </p>
+          </div>
+        )}
+        {tab === 'data' && (
+          <div className="form-card admin-card">
+            <h3 className="admin-section-title">数据备份</h3>
+            <p className="admin-row-sub" style={{ marginBottom: 16 }}>
+              数据保存在持久卷（/data）上，更新镜像不会丢失。服务每次启动都会自动备份，保留最近 5 份。
+            </p>
+
+            <div className="data-grid">
+              <div className="data-item">
+                <span>数据库路径</span>
+                <b>{dataInfo?.dbPath || '—'}</b>
+              </div>
+              <div className="data-item">
+                <span>数据库大小</span>
+                <b>{fmtSize(dataInfo?.dbSize)}</b>
+              </div>
+              <div className="data-item">
+                <span>用户 / 帖子 / 回复</span>
+                <b>{dataInfo ? `${dataInfo.counts.users} / ${dataInfo.counts.posts} / ${dataInfo.counts.replies}` : '—'}</b>
+              </div>
+            </div>
+
+            <div className="form-actions" style={{ marginTop: 18 }}>
+              <button type="button" className="btn btn-primary" onClick={handleDownloadBackup}>⬇ 下载数据库备份</button>
+              <button type="button" className="btn btn-ghost" onClick={reloadData}>刷新</button>
+            </div>
+
+            <h4 className="admin-section-title" style={{ marginTop: 26 }}>自动备份（最近 5 份）</h4>
+            <div className="admin-list">
+              {!dataInfo?.backups || dataInfo.backups.length === 0 ? (
+                <div className="post-empty">暂无自动备份（下次服务启动时生成）</div>
+              ) : (
+                dataInfo.backups.map((b) => (
+                  <div key={b.name} className="admin-row">
+                    <div className="admin-row-main">
+                      <div className="admin-row-title">{b.name}</div>
+                      <div className="admin-row-sub">{fmtSize(b.size)} · {b.time?.slice(0, 19).replace('T', ' ')}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>

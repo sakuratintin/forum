@@ -17,6 +17,30 @@ function resolveDbPath() {
 
 const dbPath = resolveDbPath()
 console.log('[db] 数据库路径:', dbPath)
+
+// 启动前自动备份数据库（保留最近 5 份），防止升级/迁移出问题
+function autoBackup() {
+  try {
+    if (!fs.existsSync(dbPath)) return
+    const st = fs.statSync(dbPath)
+    if (!st.size) return
+    const dir = path.join(path.dirname(dbPath), 'backups')
+    fs.mkdirSync(dir, { recursive: true })
+    const d = new Date()
+    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`
+    fs.copyFileSync(dbPath, path.join(dir, `forum-${stamp}.db`))
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.db')).sort()
+    while (files.length > 5) {
+      const old = files.shift()
+      try { fs.unlinkSync(path.join(dir, old)) } catch { /* ignore */ }
+    }
+    console.log('[db] 已自动备份到', dir)
+  } catch (e) {
+    console.error('[db] 自动备份失败：', e.message)
+  }
+}
+
+autoBackup()
 const db = new DatabaseSync(dbPath)
 
 const SECTIONS = [
@@ -185,4 +209,4 @@ function cleanDemoData() {
   }
 }
 
-module.exports = { db, initDb }
+module.exports = { db, initDb, dbPath }
