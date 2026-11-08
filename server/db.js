@@ -119,6 +119,14 @@ function initDb() {
   cleanDemoData()
   ensureUid()
   ensureHotColumns()
+  upgradeHotSummaries()
+}
+
+// 升级 AI 总结版本：清空旧的短总结，下次访问时按新提示词重新生成
+function upgradeHotSummaries() {
+  if (db.prepare("SELECT value FROM meta WHERE key = 'hot_summary_v2'").get()) return
+  db.prepare("UPDATE hot_topics SET ai_summary = ''").run()
+  db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('hot_summary_v2', '1')").run()
 }
 
 // 确保 hot_topics.ai_summary 列存在（老库自动补）

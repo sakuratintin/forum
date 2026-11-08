@@ -517,7 +517,7 @@ async function webSearch(query, engine, recency) {
   const resp = await fetch('https://open.bigmodel.cn/api/paas/v4/web_search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + AI_KEY },
-    body: JSON.stringify({ search_query: query, search_engine: engine, search_intent: false, count: 8, search_recency_filter: recency, content_size: 'medium' }),
+    body: JSON.stringify({ search_query: query, search_engine: engine, search_intent: false, count: 8, search_recency_filter: recency, content_size: 'high' }),
   })
   const data = await resp.json()
   if (!resp.ok) throw new Error((data && data.error && data.error.message) || '搜索失败')
@@ -592,7 +592,7 @@ app.post('/api/hot/:id/summarize', async (req, res) => {
     const s = await callAI([
       {
         role: 'system',
-        content: '你是论坛资讯编辑。请把下面这条资讯用 80~120 字归纳总结成一段通顺的话，突出核心信息与看点。只依据给定内容，不要编造，直接输出一段话，不要列点、不要标题。',
+        content: '你是论坛资讯编辑。请把下面这条资讯用 200~350 字归纳总结成一段通顺的话，写清楚：①发生了什么 ②关键信息（人物、时间、地点、数据等）③背景或影响。只依据给定内容，不要编造；不要列点、不要小标题，直接输出一段完整的话。',
       },
       { role: 'user', content: text },
     ])

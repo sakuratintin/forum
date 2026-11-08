@@ -335,14 +335,28 @@ ul { list-style: none; }
 .section-card-link:hover { color: var(--text); }
 
 /* ===== 页脚 ===== */
-.footer { border-top: 1px solid var(--line); background: rgba(5, 7, 13, 0.5); }
-.footer-inner {
-  padding: 40px 0; display: flex; flex-direction: column; align-items: center;
-  gap: 12px; text-align: center;
+.footer { border-top: 1px solid var(--line); background: rgba(5, 7, 13, 0.55); }
+.footer-grid {
+  display: grid; grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 32px; padding: 44px 0 28px;
 }
+.footer-col { display: flex; flex-direction: column; gap: 10px; }
 .footer-brand { display: flex; align-items: center; gap: 10px; }
 .footer-brand .emblem { width: 30px; height: 30px; }
-.footer-text { color: var(--text-muted); font-size: 0.85rem; }
+.footer-tagline { color: var(--text-muted); font-size: 0.86rem; line-height: 1.7; max-width: 300px; }
+.footer-title { font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.08em; color: var(--cyan-bright); margin-bottom: 4px; }
+.footer-link { color: var(--text-muted); font-size: 0.86rem; transition: color 0.2s ease; width: fit-content; }
+.footer-link:hover { color: var(--cyan-bright); }
+.footer-bottom { border-top: 1px solid var(--line); padding: 16px 0 24px; text-align: center; }
+.footer-text { color: var(--text-muted); font-size: 0.82rem; }
+
+@media (max-width: 900px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .footer-brand-col { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .footer-grid { grid-template-columns: 1fr; gap: 22px; }
+}
 
 /* ===== 占位页面 ===== */
 .page { padding: 64px 0; }

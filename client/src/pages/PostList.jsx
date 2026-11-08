@@ -40,6 +40,14 @@ export default function PostList() {
   return (
     <div className="page">
       <div className="container">
+        <nav className="breadcrumb">
+          <Link to="/">首页</Link>
+          <span>/</span>
+          <span>板块</span>
+          <span>/</span>
+          <span>{section.name}</span>
+        </nav>
+
         <div className="board-switcher">
           <Link to="/section/all" className={`board-switch${isAll ? ' active' : ''}`}>全部</Link>
           {secs.map((s) => (
