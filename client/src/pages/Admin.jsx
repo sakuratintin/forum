@@ -37,12 +37,12 @@ function AdminPanel() {
 
   const { data: stats, reload: reloadStats } = useApi('/admin/stats')
   const { data: announcements, reload: reloadAnn } = useApi('/announcements')
-  const { data: postData, reload: reloadPosts } = useApi('/posts?pageSize=100')
+  const { data: postData, reload: reloadPosts } = useApi('/admin/posts')
   const { data: userList, reload: reloadUsers } = useApi('/admin/users')
   const { data: aiModel, reload: reloadAI } = useApi('/admin/ai-model')
   const { data: dataInfo, reload: reloadData } = useApi('/admin/data-info')
 
-  const allPosts = postData?.posts || []
+  const allPosts = postData || []
   const pq = postQuery.trim().toLowerCase()
   const filteredPosts = allPosts.filter((p) => (!pq ? true : p.title.toLowerCase().includes(pq) || (p.author?.username || '').toLowerCase().includes(pq)))
   const uq = userQuery.trim().toLowerCase()
@@ -200,6 +200,10 @@ function AdminPanel() {
         {tab === 'posts' && (
           <div className="form-card admin-card">
             <h3 className="admin-section-title">帖子管理</h3>
+            <p className="admin-row-sub" style={{ marginBottom: 12 }}>
+              共 <b style={{ color: 'var(--cyan-bright)' }}>{allPosts.length}</b> 篇帖子
+              {postQuery.trim() ? `，匹配「${postQuery.trim()}」的有 ${filteredPosts.length} 篇` : ''}
+            </p>
             <input className="input admin-search" type="text" placeholder="搜索帖子标题或作者…" value={postQuery} onChange={(e) => setPostQuery(e.target.value)} />
             <div className="admin-list">
               {filteredPosts.length === 0 ? (
@@ -222,6 +226,11 @@ function AdminPanel() {
         {tab === 'users' && (
           <div className="form-card admin-card">
             <h3 className="admin-section-title">用户管理</h3>
+            <p className="admin-row-sub" style={{ marginBottom: 12 }}>
+              共 <b style={{ color: 'var(--cyan-bright)' }}>{userList?.length || 0}</b> 个账号
+              {userQuery.trim() ? `，匹配「${userQuery.trim()}」的有 ${filteredUsers.length} 个` : ''}
+              （数据库总用户数见「数据备份」页）
+            </p>
             <input className="input admin-search" type="text" placeholder="搜索用户名…" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} />
             <div className="admin-list">
               {filteredUsers.length === 0 ? (

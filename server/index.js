@@ -598,6 +598,12 @@ app.get('/api/admin/users', auth, adminOnly, (req, res) => {
   res.json(db.prepare('SELECT id, username, bio, avatar, role, muted, created_at FROM users ORDER BY id ASC').all())
 })
 
+// 管理员：全量帖子（不受分页限制，最多 2000 篇）
+app.get('/api/admin/posts', auth, adminOnly, (req, res) => {
+  const rows = db.prepare('SELECT * FROM posts ORDER BY id DESC LIMIT 2000').all()
+  res.json(rows.map((p) => serializePost(p, req.user.id)))
+})
+
 // ===== 管理员：数据备份 =====
 app.get('/api/admin/data-info', auth, adminOnly, (req, res) => {
   let size = 0
