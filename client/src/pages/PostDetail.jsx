@@ -6,6 +6,8 @@ import useTitle from '../hooks/useTitle.js'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import FollowButton from '../components/FollowButton.jsx'
 import SkeletonRows from '../components/Skeleton.jsx'
+import ReadingProgress from '../components/ReadingProgress.jsx'
+import PostRow from '../components/PostRow.jsx'
 import { toastOk, toastErr } from '../utils/toast.js'
 
 function isVideo(m) {
@@ -16,6 +18,7 @@ export default function PostDetail() {
   const { id } = useParams()
   const { data: post, loading, error, setData } = useApi(`/posts/${id}`)
   const { data: sections } = useApi('/sections')
+  const { data: relatedData } = useApi(`/posts?section=${post?.section_slug || 'none'}&pageSize=8`)
   const [replyText, setReplyText] = useState('')
   const [replyErr, setReplyErr] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -42,6 +45,7 @@ export default function PostDetail() {
   const mutedMe = !!user?.muted
   const canDelete = !!user && (post.author?.id === user.id || user.role === 'admin')
   const isAdmin = user?.role === 'admin'
+  const related = (relatedData?.posts || []).filter((p) => p.id !== post.id).slice(0, 4)
 
   async function handleLike() {
     try {
@@ -123,6 +127,7 @@ export default function PostDetail() {
 
   return (
     <div className="page">
+      <ReadingProgress />
       <div className="container detail-wrap">
         <nav className="breadcrumb">
           <Link to="/">首页</Link>
@@ -253,6 +258,17 @@ export default function PostDetail() {
             </form>
           )}
         </section>
+
+        {related.length > 0 && (
+          <section className="related-posts">
+            <h2 className="replies-title">相关推荐</h2>
+            <div className="post-list">
+              {related.map((p, i) => (
+                <PostRow key={p.id} p={p} delay={i * 30} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <ConfirmDialog

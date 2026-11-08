@@ -1515,6 +1515,16 @@ body::before {
 .msg-mutual-item .avatar { width: 30px; height: 30px; flex: none; }
 .msg-mutual-name { font-size: 0.86rem; color: var(--text); }
 
+/* ===== 阅读进度条 / 相关推荐 ===== */
+.reading-progress {
+  position: fixed; top: 0; left: 0; height: 2px; z-index: 999;
+  background: linear-gradient(90deg, var(--cyan), var(--cyan-bright));
+  box-shadow: 0 0 10px var(--cyan);
+  transition: width 0.1s linear;
+}
+.related-posts { margin-top: 42px; }
+.related-posts .replies-title { margin-bottom: 16px; }
+
 /* ===== 提醒通知 ===== */
 .nav-bell {
   position: relative; display: grid; place-items: center;
